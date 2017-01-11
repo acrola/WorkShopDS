@@ -322,5 +322,5 @@ class ImagesUtils:
                 if i == 0:
                     output = img
                 else:
-                    output = concat_images(output, img)
+                    output = ImagesUtils.concat_images(output, img)
             return output
