@@ -296,6 +296,15 @@ class DataVisualizations:
         # Show the plot.
         plt.show()
         return plot_columns, labels
+    @staticmethod
+    def simple2Dgraph(x_axis,title, xlabel, ylabel, ylim_start, ylim_end, ys, colors):
+        for y, c in zip(ys, colors):
+            lines = plt.plot(x_axis.tolist(), y.tolist(), color=c)
+        plt.ylabel(ylabel)
+        plt.xlabel(xlabel)
+        plt.title(title)
+        plt.ylim(ylim_start, ylim_end)
+        plt.show()
 
 class ImagesUtils:
         @staticmethod
@@ -312,6 +321,7 @@ class ImagesUtils:
             new_img[:hb, wa:wa + wb] = imgb
             return new_img
 
+        @staticmethod
         def concat_n_images(image_path_list):
             """
             Combines N color images from a list of image paths.
