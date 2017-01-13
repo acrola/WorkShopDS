@@ -297,13 +297,14 @@ class DataVisualizations:
         plt.show()
         return plot_columns, labels
     @staticmethod
-    def simple2Dgraph(x_axis,title, xlabel, ylabel, ylim_start, ylim_end, ys, colors):
-        for y, c in zip(ys, colors):
-            lines = plt.plot(x_axis.tolist(), y.tolist(), color=c)
+    def simple2Dgraph(x_axis,title, xlabel, ylabel, ylim_start, ylim_end, ys, definitions, colors):
+        for y, c, defi in zip(ys, colors, definitions):
+            lines = plt.plot(x_axis.tolist(), y.tolist(), color=c, label=defi)
         plt.ylabel(ylabel)
         plt.xlabel(xlabel)
         plt.title(title)
         plt.ylim(ylim_start, ylim_end)
+        plt.legend()
         plt.show()
 
 class ImagesUtils:
