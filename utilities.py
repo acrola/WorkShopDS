@@ -26,6 +26,11 @@ from mpl_toolkits.basemap import Basemap
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
+# for outliers detections
+from sklearn.linear_model import RANSACRegressor
+from sklearn.linear_model import HuberRegressor
+import statsmodels.api as sm
+
 # for images comparison:
 import cv2
 import matplotlib
@@ -48,6 +53,14 @@ from sklearn.metrics import mean_squared_error
 
 # Imports for kernel ridge:
 from sklearn.model_selection import GridSearchCV
+
+# Imports for Results check
+from scipy import stats
+from sklearn.metrics import r2_score
+from sklearn.linear_model import LinearRegression
+from sklearn import linear_model
+from sklearn.linear_model import Ridge
+from sklearn.kernel_ridge import KernelRidge
 
 
 # loading bar
@@ -335,3 +348,227 @@ class ImagesUtils:
                 else:
                     output = ImagesUtils.concat_images(output, img)
             return output
+
+class OutliersDetection():
+    @staticmethod
+    def avg_r2(g_factors, g_class, n_iter):
+        sum = 0.0
+        for i in range(n_iter):
+            X_train, X_test, y_train, y_test = train_test_split(g_factors, g_class, test_size=0.4, random_state=1)
+            regr = linear_model.LinearRegression()
+            regr.fit(X_test, y_test)
+            sum += regr.score(X_test, y_test)
+        return sum / (n_iter * (1.0))
+
+    @staticmethod
+    def remove_outliers_rlm(train_factors, train_class, i):
+        for i in range(i):
+            amount = 0
+            dropped_rows = np.asarray([])
+            print("Stage", i)
+            validation_r_squared = OutliersDetection.avg_r2(train_factors, train_class, 100)
+            print("validation R^2, %.4f " % (validation_r_squared))
+            rob = sklearn.linear_model.HuberRegressor()
+            X = np.asarray(train_factors)
+            Y = np.asarray(train_class)
+            rob.fit(X, Y)
+            y_predicted = rob.predict(X)
+            # plotting res vs. pred before dropping outliers
+            res = [val for val in (Y - y_predicted)]
+            y, x = res, rob.predict(X)
+            fig = plt.figure(figsize=(5, 4))
+            ax = fig.add_subplot(1, 1, 1)  # one row, one column, first plot
+            ax.scatter(x, y, c="blue", alpha=.1, s=300)
+            ax.set_title("residuals vs. predicted:")
+            ax.set_xlabel("predicted")
+            ax.set_ylabel("residuals)")
+            plt.show()
+            # dropping rows
+            res = [abs(val) for val in (Y - y_predicted)]
+            rresid = list(zip(range(train_factors.shape[0]), res))
+            not_sorted = rresid
+            rresid.sort(key=lambda tup: tup[1], reverse=True)
+            length = len(rresid)
+            sd = np.asarray([tup[1] for tup in rresid]).std()
+            mean = np.asarray([tup[1] for tup in rresid]).mean()
+            deleted_index = [tup[0] for tup in rresid if tup[1] > mean + 2 * sd]
+            amount = len(deleted_index)
+            dropped_rows = train_factors.take(deleted_index, axis=0, convert=True, is_copy=True)
+            train_factors = train_factors.drop(train_factors.index[deleted_index])
+            train_class = train_class.drop(train_class.index[deleted_index])
+            print("%d rows were dropped" % (amount))
+            train_factors.reset_index(drop=True, inplace=True)
+            train_class.reset_index(drop=True, inplace=True)
+
+            # res vs. pred after outliers dropping
+        print("After final stage")
+        X = np.asarray(train_factors)
+        Y = np.asarray(train_class)
+        validation_r_squared = OutliersDetection.avg_r2(train_factors, train_class, 100)
+        print("validation R^2, %.4f " % (validation_r_squared))
+        rob = sklearn.linear_model.HuberRegressor()
+        rob.fit(X, Y)
+        y_predicted = rob.predict(X)
+        res = [val for val in (Y - y_predicted)]
+        y, x = res, rob.predict(X)
+        fig = plt.figure(figsize=(5, 4))
+        ax = fig.add_subplot(1, 1, 1)
+        ax.scatter(x, y, c="purple", alpha=.1, s=300)
+        ax.set_title("residuals vs. predicted: final")
+        ax.set_xlabel("predicted")
+        ax.set_ylabel("residuals")
+        plt.show()
+
+
+class ResultsMeasurements():
+
+    def __init__(self, trainData, testData, trainFactors, testFactors, trainClass, testClass, model, modelName):
+        # A dataframe containing Years, GDP Per Capita, Labels, Predictions
+        self.model = model
+        self.modelName = modelName
+        self.trainRelevantData =  pd.DataFrame(trainData['year'])
+        self.trainRelevantData['GDP'] = trainData['GDP per capita (constant 2005 US$)']
+        self.trainRelevantData['label'] = pd.DataFrame(trainClass)
+        self.model.fit(trainFactors,trainClass)
+        self.trainRelevantData['prediction'] = self.model.predict(trainFactors)
+        self.trainRelevantData.is_copy = False
+        self.trainFactors = trainFactors
+
+        self.testRelevantData =  pd.DataFrame(testData['year'])
+        self.testRelevantData['GDP'] = testData['GDP per capita (constant 2005 US$)']
+        self.testRelevantData['label'] = pd.DataFrame(testClass)
+        self.testRelevantData['prediction'] = self.model.predict(testFactors)
+        self.testRelevantData.is_copy = False
+        self.testFactors = testFactors
+
+
+
+    def RsquaredGraph(self, r2_train, r2_test, x_axis):
+        DataVisualizations.simple2Dgraph(r2_train[0], self.modelName+'\n R^2 per ' + x_axis + ', Train (blue) vs. Test(green)', x_axis,
+                                         'R^2', -4, 1, \
+                                         [r2_train[1], r2_test[1]], ['R^2 Train', 'R^2 Test'], ['b', 'g'])
+
+    def RsquaredSeriesYear(self, data, x_axis):
+        RsquaredSeries = pd.DataFrame([[i, r2_score(data[data[x_axis] == i].label, data[data[x_axis] == i].prediction)] \
+                                       for i in data[x_axis].unique()])
+        return RsquaredSeries.sort_values(by=0, ascending=1)
+
+    def RsquaredSeriesGDP(self, data, x_axis):
+        sortedData = data.sort_values(by='GDP', ascending=1)
+        sortedData = np.array_split(sortedData, 30)
+        RsquaredSeries = pd.DataFrame([[sortedData[i].iloc[[0]]['GDP'].item(), \
+                                        r2_score(sortedData[i].label, sortedData[i].prediction)] for i in
+                                       range(len(sortedData))])
+        return RsquaredSeries.sort_values(by=0, ascending=1)
+
+    def RSquaredResults(self):
+        RSquaredTrain = self.model.score(self.trainFactors, self.trainRelevantData['label'])
+        RSquaredTest = self.model.score(self.testFactors, self.testRelevantData['label'])
+
+        print("R^2 for Train data = " + str(RSquaredTrain))
+        print("R^2 for Test data = " + str(RSquaredTest))
+
+        RSquaredTrainYears = self.RsquaredSeriesYear(self.trainRelevantData, 'year')
+        RSquaredTestYears = self.RsquaredSeriesYear(self.testRelevantData, 'year')
+
+        RSquaredTrainGDPs = self.RsquaredSeriesGDP(self.trainRelevantData, 'GDP')
+        RSquaredTestGDPs = self.RsquaredSeriesGDP(self.testRelevantData, 'GDP')
+
+        # R^2 per year, per GDP
+        self.RsquaredGraph(RSquaredTrainYears, RSquaredTestYears, 'Year')
+        self.RsquaredGraph(RSquaredTrainGDPs, RSquaredTestGDPs, 'GDP')
+
+    def DistributionNumericCalc(self, predictions):
+        return stats.kstest(predictions, 'norm')
+
+    def DistributionGraphicCalc(self, predictions, binsNum, title):
+        sns.distplot(predictions, bins=binsNum, kde=True)
+        plt.title(self.modelName+'\n Histogram of Happy Planet Index values: '+title)
+        plt.xlabel('HPI')
+        plt.ylabel('density')
+        plt.show()
+
+    def DistributionResults(self):
+        print("KSTEST results, train: " + str(self.DistributionNumericCalc(self.trainRelevantData['prediction'])))
+        print("KSTEST results, test : " + str(self.DistributionNumericCalc(self.testRelevantData['prediction'])))
+
+        self.DistributionGraphicCalc(self.trainRelevantData['label'], 30, "train label")
+        self.DistributionGraphicCalc(self.trainRelevantData['prediction'],30,"train prediction")
+
+        self.DistributionGraphicCalc(self.testRelevantData['label'],30,"test label")
+        self.DistributionGraphicCalc(self.testRelevantData['prediction'], 30, "test prediction")
+
+    def MeanPredictionGraph(self, prediction_train, prediction_test, x_axis):
+        DataVisualizations.simple2Dgraph(prediction_train[0], self.modelName+'\n HPI per ' + x_axis + ', Train Prediction mean (blue) vs. Train Label mean (green)', x_axis,'Prediction', 0, 100, \
+                                         [prediction_train[1], prediction_train[2]], ['Train Prediction', 'Train Class'], ['b', 'g'])
+        DataVisualizations.simple2Dgraph(prediction_test[0],  self.modelName+'\n HPI per ' + x_axis + ', Test Prediction mean (blue) vs. Test Label mean (green)', x_axis, 'Prediction', 0, 100,\
+                                         [prediction_test[1], prediction_test[2]], ['Test Prediction', 'Test Class'], ['b', 'g'])
+
+    def MeanPredictionSeriesYear(self, data, x_axis):
+        MeanPredictionSeries = pd.DataFrame([[i, data[data[x_axis] == i].prediction.mean(), data[data[x_axis] == i].label.mean()] \
+                                       for i in data[x_axis].unique()])
+        return MeanPredictionSeries.sort_values(by=0, ascending=1)
+
+    def MeanPredictionSeriesGDP(self, data, x_axis):
+        sortedData = data.sort_values(by='GDP', ascending=1)
+        sortedData = np.array_split(sortedData, 30)
+        MeanPredictionSeries = pd.DataFrame([[sortedData[i].iloc[[0]]['GDP'].item(), \
+                                          sortedData[i].prediction.mean(), sortedData[i].label.mean()] for i in range(len(sortedData))])
+        return MeanPredictionSeries.sort_values(by=0, ascending=1)
+
+    def MeanPredictionResults(self):
+        print("The mean HPI of the train data: " + str(self.trainRelevantData['label'].mean()))
+        print("The mean prediction of the train data: " + str(self.trainRelevantData['prediction'].mean()))
+        print("The mean HPI of the test data : " + str(self.testRelevantData['label'].mean()))
+        print("The mean prediction of the test data : " + str(self.testRelevantData['prediction'].mean()))
+
+        MeanPredictionTrainYears = self.MeanPredictionSeriesYear(self.trainRelevantData, 'year')
+        MeanPredictionTestYears  = self.MeanPredictionSeriesYear(self.testRelevantData, 'year')
+
+        MeanPredictionTrainGDPs = self.MeanPredictionSeriesGDP(self.trainRelevantData, 'GDP')
+        MeanPredictionTestGDPs  = self.MeanPredictionSeriesGDP(self.testRelevantData, 'GDP')
+
+        # Mean Prediction per year, per GDP
+        self.MeanPredictionGraph(MeanPredictionTrainYears, MeanPredictionTestYears, 'Year')
+        self.MeanPredictionGraph(MeanPredictionTrainGDPs, MeanPredictionTestGDPs, 'GDP')
+
+    def errPercentage(self, label, prediction):
+        return (abs(prediction) / label) * 100
+
+    def errPercentageCalc(self,label,prediction):
+        errTable = pd.DataFrame({'label':label, 'prediction': prediction})
+        errTable['errPercentage'] = errTable.apply(lambda row: self.errPercentage(row['label'],row['prediction']), axis=1)
+        return errTable['errPercentage'].mean()
+
+    def ErrorPercentageGraph(self, errPer_train, errPer_test, x_axis):
+        DataVisualizations.simple2Dgraph(errPer_train[0], self.modelName+'\n Error Percentage per ' + x_axis + ', Train (blue) vs. Test(green)', x_axis,'Error Percentage', 0, 150, \
+                                         [errPer_train[1], errPer_test[1]], ['Error Percentage Train', 'Error Percentage Test'], ['b', 'g'])
+
+    def ErrorPercentageSeriesYear(self, data, x_axis):
+        ErrorPercentage = pd.DataFrame([[i, self.errPercentageCalc(data[data[x_axis] == i].label, data[data[x_axis] == i].prediction)] \
+                                       for i in data[x_axis].unique()])
+        return ErrorPercentage.sort_values(by=0, ascending=1)
+
+    def ErrorPercentageSeriesGDP(self, data, x_axis):
+        sortedData = data.sort_values(by='GDP', ascending=1)
+        sortedData = np.array_split(sortedData, 30)
+        ErrorPercentage = pd.DataFrame([[sortedData[i].iloc[[0]]['GDP'].item(), \
+                                         self.errPercentageCalc(sortedData[i].label, sortedData[i].prediction)] for i in range(len(sortedData))])
+        return ErrorPercentage.sort_values(by=0, ascending=1)
+
+    def ErrorPercentageResults(self):
+        ErrorPercentageTrain = self.errPercentageCalc(self.trainRelevantData['prediction'], self.trainRelevantData['label'])
+        ErrorPercentageTest  = self.errPercentageCalc(self.testRelevantData['prediction'], self.testRelevantData['label'])
+
+        print("Error Percentage for Train data = " + str(ErrorPercentageTrain))
+        print("Error Percentage for Test data = " + str(ErrorPercentageTest))
+
+        ErrorPercentageTrainYears = self.ErrorPercentageSeriesYear(self.trainRelevantData, 'year')
+        ErrorPercentageTestYears = self.ErrorPercentageSeriesYear(self.testRelevantData, 'year')
+
+        ErrorPercentageTrainGDPs = self.ErrorPercentageSeriesGDP(self.trainRelevantData, 'GDP')
+        ErrorPercentageTestGDPs = self.ErrorPercentageSeriesGDP(self.testRelevantData, 'GDP')
+
+        # R^2 per year, per GDP
+        self.ErrorPercentageGraph(ErrorPercentageTrainYears, ErrorPercentageTestYears, 'Year')
+        self.ErrorPercentageGraph(ErrorPercentageTrainGDPs, ErrorPercentageTestGDPs, 'GDP')
