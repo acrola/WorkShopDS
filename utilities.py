@@ -62,6 +62,8 @@ from sklearn import linear_model
 from sklearn.linear_model import Ridge
 from sklearn.kernel_ridge import KernelRidge
 
+# cPickle for model fit download to file
+import _pickle as cPickle
 
 # loading bar
 from ipywidgets import FloatProgress
@@ -80,6 +82,9 @@ template_image = os.path.join('map_files', 'imgfile.png')
 globe_plots = 'globe_plots'
 uncorrolated_plots = 'uncorrolated_images'
 
+# Dumped models path
+dumped_models = 'dumped_models'
+
 # Years with labels
 rellevant_years_for_labels = ['1961', '1962', '1963', '1964', '1965', '1966', '1967', '1968', '1969',\
                               '1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999',\
@@ -87,6 +92,7 @@ rellevant_years_for_labels = ['1961', '1962', '1963', '1964', '1965', '1966', '1
                               '1980', '1981', '1982', '1983', '1984', '1985', '1986', '1987', '1988', '1989',\
                               '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2009', '2012', '2016']
 rellevant_years = [year + '.00' for year in rellevant_years_for_labels]
+classifiers = ['Random_Forest', 'Linear_Regression', 'Lasso', 'Ridge', 'Kernel_Ridge']
 
 class DataPreparation():
     @staticmethod
@@ -468,15 +474,15 @@ class ResultsMeasurements():
         print("R^2 for Train data = " + str(RSquaredTrain))
         print("R^2 for Test data = " + str(RSquaredTest))
 
-        RSquaredTrainYears = self.RsquaredSeriesYear(self.trainRelevantData, 'year')
-        RSquaredTestYears = self.RsquaredSeriesYear(self.testRelevantData, 'year')
-
-        RSquaredTrainGDPs = self.RsquaredSeriesGDP(self.trainRelevantData, 'GDP')
-        RSquaredTestGDPs = self.RsquaredSeriesGDP(self.testRelevantData, 'GDP')
-
-        # R^2 per year, per GDP
-        self.RsquaredGraph(RSquaredTrainYears, RSquaredTestYears, 'Year')
-        self.RsquaredGraph(RSquaredTrainGDPs, RSquaredTestGDPs, 'GDP')
+        # RSquaredTrainYears = self.RsquaredSeriesYear(self.trainRelevantData, 'year')
+        # RSquaredTestYears = self.RsquaredSeriesYear(self.testRelevantData, 'year')
+        #
+        # RSquaredTrainGDPs = self.RsquaredSeriesGDP(self.trainRelevantData, 'GDP')
+        # RSquaredTestGDPs = self.RsquaredSeriesGDP(self.testRelevantData, 'GDP')
+        #
+        # # R^2 per year, per GDP
+        # self.RsquaredGraph(RSquaredTrainYears, RSquaredTestYears, 'Year')
+        # self.RsquaredGraph(RSquaredTrainGDPs, RSquaredTestGDPs, 'GDP')
 
     def DistributionNumericCalc(self, predictions):
         return stats.kstest(predictions, 'norm')
@@ -533,15 +539,15 @@ class ResultsMeasurements():
         self.MeanPredictionGraph(MeanPredictionTrainGDPs, MeanPredictionTestGDPs, 'GDP')
 
     def errPercentage(self, label, prediction):
-        return (abs(prediction) / label) * 100
+        return (abs(label - prediction) / label) * 100
 
     def errPercentageCalc(self,label,prediction):
         errTable = pd.DataFrame({'label':label, 'prediction': prediction})
-        errTable['errPercentage'] = errTable.apply(lambda row: self.errPercentage(row['label'],row['prediction']), axis=1)
+        errTable['errPercentage'] = errTable.apply(lambda row: self.errPercentage(row['label'], row['prediction']), axis=1)
         return errTable['errPercentage'].mean()
 
     def ErrorPercentageGraph(self, errPer_train, errPer_test, x_axis):
-        DataVisualizations.simple2Dgraph(errPer_train[0], self.modelName+'\n Error Percentage per ' + x_axis + ', Train (blue) vs. Test(green)', x_axis,'Error Percentage', 0, 150, \
+        DataVisualizations.simple2Dgraph(errPer_train[0], self.modelName+'\n Error Percentage per ' + x_axis + ', Train vs. Test', x_axis,'Error Percentage', 0, 100, \
                                          [errPer_train[1], errPer_test[1]], ['Error Percentage Train', 'Error Percentage Test'], ['b', 'g'])
 
     def ErrorPercentageSeriesYear(self, data, x_axis):
@@ -572,3 +578,16 @@ class ResultsMeasurements():
         # R^2 per year, per GDP
         self.ErrorPercentageGraph(ErrorPercentageTrainYears, ErrorPercentageTestYears, 'Year')
         self.ErrorPercentageGraph(ErrorPercentageTrainGDPs, ErrorPercentageTestGDPs, 'GDP')
+
+class ModelDump():
+    @staticmethod
+    def dumpModeslToFiles(names, models):
+        for name, model in zip(names, models):
+            with open(os.path.join(dumped_models, name + '.pkl'), 'wb') as fid:
+                cPickle.dump(model, fid)
+    @staticmethod
+    def loadModelsFromFiles(names):
+        models = []
+        for name in names:
+            with open(os.path.join(dumped_models, name + '.pkl'), 'rb') as fid:
+                models.append(cPickle.load(fid))
