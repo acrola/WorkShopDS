@@ -384,7 +384,7 @@ class OutliersDetection():
         return sum / (n_iter * (1.0))
 
     @staticmethod
-    def remove_outliers_rlm(train_factors, train_class, i, show_plots):
+    def remove_outliers_rlm(train_factors, train_class, train_data, i, show_plots):
         for i in range(i):
             amount = 0
             dropped_rows = np.asarray([])
@@ -416,14 +416,15 @@ class OutliersDetection():
             sd = np.asarray([tup[1] for tup in rresid]).std()
             mean = np.asarray([tup[1] for tup in rresid]).mean()
             deleted_index = [tup[0] for tup in rresid if tup[1] > mean + 2 * sd]
-            amount = len(deleted_index)
-            dropped_rows = train_factors.take(deleted_index, axis=0, convert=True, is_copy=True)
+            amount += len(deleted_index)
+            #dropped_rows = train_factors.take(deleted_index, axis=0, convert=True, is_copy=True)
             train_factors = train_factors.drop(train_factors.index[deleted_index])
             train_class = train_class.drop(train_class.index[deleted_index])
+            train_data = train_data.drop(train_data.index[deleted_index])
             print("%d rows were dropped" % (amount))
             train_factors.reset_index(drop=True, inplace=True)
             train_class.reset_index(drop=True, inplace=True)
-
+            train_data.reset_index(drop=True, inplace=True)
             # res vs. pred after outliers dropping
         print("After final stage")
         X = np.asarray(train_factors)
@@ -443,6 +444,7 @@ class OutliersDetection():
             ax.set_xlabel("predicted")
             ax.set_ylabel("residuals")
             plt.show()
+        return train_factors, train_class, train_data
 
 
 class ResultsMeasurements():
@@ -452,6 +454,8 @@ class ResultsMeasurements():
         self.modelName = modelName
         self.trainRelevantData = pd.DataFrame(trainData['year'])
         self.trainRelevantData['GDP'] = trainData['GDP per capita (constant 2005 US$)']
+        self.trainRelevantData['year'] = trainData['year']
+        self.trainRelevantData['country'] = trainData['country']
         self.trainRelevantData['label'] = pd.DataFrame(trainClass)
         model_file = modelName.replace(" ", "_")
 
@@ -466,6 +470,8 @@ class ResultsMeasurements():
 
         self.testRelevantData = pd.DataFrame(testData['year'])
         self.testRelevantData['GDP'] = testData['GDP per capita (constant 2005 US$)']
+        self.testRelevantData['year'] = testData['year']
+        self.testRelevantData['country'] = testData['country']
         self.testRelevantData['label'] = pd.DataFrame(testClass)
         self.testRelevantData['prediction'] = self.model.predict(testFactors)
         self.testRelevantData.is_copy = False
