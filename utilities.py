@@ -309,7 +309,7 @@ class MapVisualizations:
 
 class DataVisualizations:
     @staticmethod
-    def twoDimPCAandClustering(factors):
+    def twoDimPCAandClustering(factors, show_plots):
         # Initialize the model with 2 parameters -- number of clusters and random state.
         kmeans_model = KMeans(n_clusters=5, random_state=1)
         # Get only the numeric columns from games.
@@ -323,10 +323,11 @@ class DataVisualizations:
         pca_2 = PCA(2)
         # Fit the PCA model on the numeric columns from earlier.
         plot_columns = pca_2.fit_transform(factors)
-        # Make a scatter plot of each game, shaded according to cluster assignment.
-        plt.scatter(x=plot_columns[:, 0], y=plot_columns[:, 1], c=labels)
-        # Show the plot.
-        plt.show()
+        if show_plots:
+            # Make a scatter plot of each game, shaded according to cluster assignment.
+            plt.scatter(x=plot_columns[:, 0], y=plot_columns[:, 1], c=labels)
+            # Show the plot.
+            plt.show()
         return plot_columns, labels
 
     @staticmethod
@@ -383,7 +384,7 @@ class OutliersDetection():
         return sum / (n_iter * (1.0))
 
     @staticmethod
-    def remove_outliers_rlm(train_factors, train_class, i):
+    def remove_outliers_rlm(train_factors, train_class, i, show_plots):
         for i in range(i):
             amount = 0
             dropped_rows = np.asarray([])
@@ -398,13 +399,14 @@ class OutliersDetection():
             # plotting res vs. pred before dropping outliers
             res = [val for val in (Y - y_predicted)]
             y, x = res, rob.predict(X)
-            fig = plt.figure(figsize=(5, 4))
-            ax = fig.add_subplot(1, 1, 1)  # one row, one column, first plot
-            ax.scatter(x, y, c="blue", alpha=.1, s=300)
-            ax.set_title("residuals vs. predicted:")
-            ax.set_xlabel("predicted")
-            ax.set_ylabel("residuals)")
-            plt.show()
+            if show_plots:
+                fig = plt.figure(figsize=(5, 4))
+                ax = fig.add_subplot(1, 1, 1)  # one row, one column, first plot
+                ax.scatter(x, y, c="blue", alpha=.1, s=300)
+                ax.set_title("residuals vs. predicted:")
+                ax.set_xlabel("predicted")
+                ax.set_ylabel("residuals)")
+                plt.show()
             # dropping rows
             res = [abs(val) for val in (Y - y_predicted)]
             rresid = list(zip(range(train_factors.shape[0]), res))
@@ -433,13 +435,14 @@ class OutliersDetection():
         y_predicted = rob.predict(X)
         res = [val for val in (Y - y_predicted)]
         y, x = res, rob.predict(X)
-        fig = plt.figure(figsize=(5, 4))
-        ax = fig.add_subplot(1, 1, 1)
-        ax.scatter(x, y, c="purple", alpha=.1, s=300)
-        ax.set_title("residuals vs. predicted: final")
-        ax.set_xlabel("predicted")
-        ax.set_ylabel("residuals")
-        plt.show()
+        if show_plots:
+            fig = plt.figure(figsize=(5, 4))
+            ax = fig.add_subplot(1, 1, 1)
+            ax.scatter(x, y, c="purple", alpha=.1, s=300)
+            ax.set_title("residuals vs. predicted: final")
+            ax.set_xlabel("predicted")
+            ax.set_ylabel("residuals")
+            plt.show()
 
 
 class ResultsMeasurements():
