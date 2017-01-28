@@ -8,6 +8,7 @@ import matplotlib.cm
 import pathlib
 import csv
 import os
+import zipfile
 import math
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -44,12 +45,12 @@ from sklearn.pipeline import Pipeline
 import sklearn.preprocessing as sp
 import sklearn.feature_selection as fs
 from sklearn import kernel_ridge
-#import skfeature as skf
+# import skfeature as skf
 
 # Import the random forest model.
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
-#from sklearn.grid_search import GridSearchCV
+# from sklearn.grid_search import GridSearchCV
 
 # Imports for kernel ridge:
 from sklearn.model_selection import GridSearchCV
@@ -70,13 +71,14 @@ from ipywidgets import FloatProgress
 from IPython.display import display
 
 # Data paths
-path_complete_data = os.path.join('merged_data_ready','merged_data.csv')
-path = os.path.join('raw_data','DB_Data','Edstast_data.csv')
-path_fixed = os.path.join('raw_data','DB_Data','Edstast_data_fixed.csv')
-input_labels = os.path.join('raw_data','Labels','Happy_Planet_Index_Data')
+path_complete_data = os.path.join('merged_data_ready', 'merged_data.csv')
+zip_file_path = os.path.join('raw_data', 'DB_Data', 'Edstast_data.zip')
+path = os.path.join('raw_data', 'DB_Data', 'Edstast_data.csv')
+path_fixed = os.path.join('raw_data', 'DB_Data', 'Edstast_data_fixed.csv')
+input_labels = os.path.join('raw_data', 'Labels', 'Happy_Planet_Index_Data')
 
 # Paths for the graphical map visualization use
-countries_codes = os.path.join('raw_data','DB_Data','WDI_Country.csv')
+countries_codes = os.path.join('raw_data', 'DB_Data', 'WDI_Country.csv')
 shapefile = os.path.join('map_files', 'ne_10m_admin_0_countries')
 template_image = os.path.join('map_files', 'imgfile.png')
 globe_plots = 'globe_plots'
@@ -86,13 +88,14 @@ uncorrolated_plots = 'uncorrolated_images'
 dumped_models = 'dumped_models'
 
 # Years with labels
-rellevant_years_for_labels = ['1961', '1962', '1963', '1964', '1965', '1966', '1967', '1968', '1969',\
-                              '1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999',\
-                              '1970', '1971', '1972', '1973', '1974', '1975', '1976', '1977', '1978', '1979',\
-                              '1980', '1981', '1982', '1983', '1984', '1985', '1986', '1987', '1988', '1989',\
+rellevant_years_for_labels = ['1961', '1962', '1963', '1964', '1965', '1966', '1967', '1968', '1969', \
+                              '1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', \
+                              '1970', '1971', '1972', '1973', '1974', '1975', '1976', '1977', '1978', '1979', \
+                              '1980', '1981', '1982', '1983', '1984', '1985', '1986', '1987', '1988', '1989', \
                               '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2009', '2012', '2016']
 rellevant_years = [year + '.00' for year in rellevant_years_for_labels]
 classifiers = ['Random_Forest', 'Linear_Regression', 'Lasso', 'Ridge', 'Kernel_Ridge']
+
 
 class DataPreparation():
     @staticmethod
@@ -143,12 +146,20 @@ class DataPreparation():
         return df
 
     @staticmethod
+    # Unzipping the CSV File
+    def unzipfile(zipped):
+        zip_ref = zipfile.ZipFile(zipped, 'r')
+        zip_ref.extractall(os.path.dirname(os.path.realpath(zip_file_path)))
+        zip_ref.close()
+
+    @staticmethod
     # The Main Data Extract Function
     # Run to Extract Data (invokes all the other functions above)
     def obtainDataFromLocalDBs():
         f = FloatProgress(min=0, max=100)
         display(f)
-
+        # unzip the dataset
+        DataPreparation.unzipfile(zip_file_path)
         # extract the labels dataframe from the csv files
         lis = []
         for year in rellevant_years_for_labels:
@@ -166,6 +177,7 @@ class DataPreparation():
         # merge (by inner join) the data with the labels
         DataPreparation.mergeDataWithLabels(df, labels_df)
         f.value += 50
+
 
 class MapVisualizations:
     @staticmethod
@@ -294,6 +306,7 @@ class MapVisualizations:
         plt.axis('off')
         plt.imshow(thresh, cmap='gray', interpolation='bicubic'), plt.show()
 
+
 class DataVisualizations:
     @staticmethod
     def twoDimPCAandClustering(factors):
@@ -315,8 +328,9 @@ class DataVisualizations:
         # Show the plot.
         plt.show()
         return plot_columns, labels
+
     @staticmethod
-    def simple2Dgraph(x_axis,title, xlabel, ylabel, ylim_start, ylim_end, ys, definitions, colors):
+    def simple2Dgraph(x_axis, title, xlabel, ylabel, ylim_start, ylim_end, ys, definitions, colors):
         for y, c, defi in zip(ys, colors, definitions):
             lines = plt.plot(x_axis.tolist(), y.tolist(), color=c, label=defi)
         plt.ylabel(ylabel)
@@ -326,34 +340,36 @@ class DataVisualizations:
         plt.legend()
         plt.show()
 
-class ImagesUtils:
-        @staticmethod
-        def concat_images(imga, imgb):
-            """
-            Combines two color image ndarrays side-by-side.
-            """
-            ha, wa = imga.shape[:2]
-            hb, wb = imgb.shape[:2]
-            max_height = np.max([ha, hb])
-            total_width = wa + wb
-            new_img = np.zeros(shape=(max_height, total_width), dtype=np.uint8)
-            new_img[:ha, :wa] = imga
-            new_img[:hb, wa:wa + wb] = imgb
-            return new_img
 
-        @staticmethod
-        def concat_n_images(image_path_list):
-            """
-            Combines N color images from a list of image paths.
-            """
-            output = None
-            for i, img_path in enumerate(image_path_list):
-                img = plt.imread(img_path)[:, :]
-                if i == 0:
-                    output = img
-                else:
-                    output = ImagesUtils.concat_images(output, img)
-            return output
+class ImagesUtils:
+    @staticmethod
+    def concat_images(imga, imgb):
+        """
+        Combines two color image ndarrays side-by-side.
+        """
+        ha, wa = imga.shape[:2]
+        hb, wb = imgb.shape[:2]
+        max_height = np.max([ha, hb])
+        total_width = wa + wb
+        new_img = np.zeros(shape=(max_height, total_width), dtype=np.uint8)
+        new_img[:ha, :wa] = imga
+        new_img[:hb, wa:wa + wb] = imgb
+        return new_img
+
+    @staticmethod
+    def concat_n_images(image_path_list):
+        """
+        Combines N color images from a list of image paths.
+        """
+        output = None
+        for i, img_path in enumerate(image_path_list):
+            img = plt.imread(img_path)[:, :]
+            if i == 0:
+                output = img
+            else:
+                output = ImagesUtils.concat_images(output, img)
+        return output
+
 
 class OutliersDetection():
     @staticmethod
@@ -427,30 +443,35 @@ class OutliersDetection():
 
 
 class ResultsMeasurements():
-
-    def __init__(self, trainData, testData, trainFactors, testFactors, trainClass, testClass, model, modelName):
+    def __init__(self, loadModel, trainData, testData, trainFactors, testFactors, trainClass, testClass, model, modelName):
         # A dataframe containing Years, GDP Per Capita, Labels, Predictions
         self.model = model
         self.modelName = modelName
-        self.trainRelevantData =  pd.DataFrame(trainData['year'])
+        self.trainRelevantData = pd.DataFrame(trainData['year'])
         self.trainRelevantData['GDP'] = trainData['GDP per capita (constant 2005 US$)']
         self.trainRelevantData['label'] = pd.DataFrame(trainClass)
-        self.model.fit(trainFactors,trainClass)
+        model_file = modelName.replace(" ", "_")
+
+        if not loadModel:
+            self.model.fit(trainFactors, trainClass)
+            ModelDump.dumpModelToFile(model_file, model)
+        else:
+            self.model = ModelDump.loadModelFromFile(model_file)
         self.trainRelevantData['prediction'] = self.model.predict(trainFactors)
         self.trainRelevantData.is_copy = False
         self.trainFactors = trainFactors
 
-        self.testRelevantData =  pd.DataFrame(testData['year'])
+        self.testRelevantData = pd.DataFrame(testData['year'])
         self.testRelevantData['GDP'] = testData['GDP per capita (constant 2005 US$)']
         self.testRelevantData['label'] = pd.DataFrame(testClass)
         self.testRelevantData['prediction'] = self.model.predict(testFactors)
         self.testRelevantData.is_copy = False
         self.testFactors = testFactors
 
-
-
     def RsquaredGraph(self, r2_train, r2_test, x_axis):
-        DataVisualizations.simple2Dgraph(r2_train[0], self.modelName+'\n R^2 per ' + x_axis + ', Train (blue) vs. Test(green)', x_axis,
+        DataVisualizations.simple2Dgraph(r2_train[0],
+                                         self.modelName + '\n R^2 per ' + x_axis + ', Train (blue) vs. Test(green)',
+                                         x_axis,
                                          'R^2', -4, 1, \
                                          [r2_train[1], r2_test[1]], ['R^2 Train', 'R^2 Test'], ['b', 'g'])
 
@@ -489,7 +510,7 @@ class ResultsMeasurements():
 
     def DistributionGraphicCalc(self, predictions, binsNum, title):
         sns.distplot(predictions, bins=binsNum, kde=True)
-        plt.title(self.modelName+'\n Histogram of Happy Planet Index values: '+title)
+        plt.title(self.modelName + '\n Histogram of Happy Planet Index values: ' + title)
         plt.xlabel('HPI')
         plt.ylabel('density')
         plt.show()
@@ -499,27 +520,35 @@ class ResultsMeasurements():
         print("KSTEST results, test : " + str(self.DistributionNumericCalc(self.testRelevantData['prediction'])))
 
         self.DistributionGraphicCalc(self.trainRelevantData['label'], 30, "train label")
-        self.DistributionGraphicCalc(self.trainRelevantData['prediction'],30,"train prediction")
+        self.DistributionGraphicCalc(self.trainRelevantData['prediction'], 30, "train prediction")
 
-        self.DistributionGraphicCalc(self.testRelevantData['label'],30,"test label")
+        self.DistributionGraphicCalc(self.testRelevantData['label'], 30, "test label")
         self.DistributionGraphicCalc(self.testRelevantData['prediction'], 30, "test prediction")
 
     def MeanPredictionGraph(self, prediction_train, prediction_test, x_axis):
-        DataVisualizations.simple2Dgraph(prediction_train[0], self.modelName+'\n HPI per ' + x_axis + ', Train Prediction mean (blue) vs. Train Label mean (green)', x_axis,'Prediction', 0, 100, \
-                                         [prediction_train[1], prediction_train[2]], ['Train Prediction', 'Train Class'], ['b', 'g'])
-        DataVisualizations.simple2Dgraph(prediction_test[0],  self.modelName+'\n HPI per ' + x_axis + ', Test Prediction mean (blue) vs. Test Label mean (green)', x_axis, 'Prediction', 0, 100,\
-                                         [prediction_test[1], prediction_test[2]], ['Test Prediction', 'Test Class'], ['b', 'g'])
+        DataVisualizations.simple2Dgraph(prediction_train[0],
+                                         self.modelName + '\n HPI per ' + x_axis + ', Train Prediction mean (blue) vs. Train Label mean (green)',
+                                         x_axis, 'Prediction', 0, 100, \
+                                         [prediction_train[1], prediction_train[2]],
+                                         ['Train Prediction', 'Train Class'], ['b', 'g'])
+        DataVisualizations.simple2Dgraph(prediction_test[0],
+                                         self.modelName + '\n HPI per ' + x_axis + ', Test Prediction mean (blue) vs. Test Label mean (green)',
+                                         x_axis, 'Prediction', 0, 100, \
+                                         [prediction_test[1], prediction_test[2]], ['Test Prediction', 'Test Class'],
+                                         ['b', 'g'])
 
     def MeanPredictionSeriesYear(self, data, x_axis):
-        MeanPredictionSeries = pd.DataFrame([[i, data[data[x_axis] == i].prediction.mean(), data[data[x_axis] == i].label.mean()] \
-                                       for i in data[x_axis].unique()])
+        MeanPredictionSeries = pd.DataFrame(
+            [[i, data[data[x_axis] == i].prediction.mean(), data[data[x_axis] == i].label.mean()] \
+             for i in data[x_axis].unique()])
         return MeanPredictionSeries.sort_values(by=0, ascending=1)
 
     def MeanPredictionSeriesGDP(self, data, x_axis):
         sortedData = data.sort_values(by='GDP', ascending=1)
         sortedData = np.array_split(sortedData, 30)
         MeanPredictionSeries = pd.DataFrame([[sortedData[i].iloc[[0]]['GDP'].item(), \
-                                          sortedData[i].prediction.mean(), sortedData[i].label.mean()] for i in range(len(sortedData))])
+                                              sortedData[i].prediction.mean(), sortedData[i].label.mean()] for i in
+                                             range(len(sortedData))])
         return MeanPredictionSeries.sort_values(by=0, ascending=1)
 
     def MeanPredictionResults(self):
@@ -529,10 +558,10 @@ class ResultsMeasurements():
         print("The mean prediction of the test data : " + str(self.testRelevantData['prediction'].mean()))
 
         MeanPredictionTrainYears = self.MeanPredictionSeriesYear(self.trainRelevantData, 'year')
-        MeanPredictionTestYears  = self.MeanPredictionSeriesYear(self.testRelevantData, 'year')
+        MeanPredictionTestYears = self.MeanPredictionSeriesYear(self.testRelevantData, 'year')
 
         MeanPredictionTrainGDPs = self.MeanPredictionSeriesGDP(self.trainRelevantData, 'GDP')
-        MeanPredictionTestGDPs  = self.MeanPredictionSeriesGDP(self.testRelevantData, 'GDP')
+        MeanPredictionTestGDPs = self.MeanPredictionSeriesGDP(self.testRelevantData, 'GDP')
 
         # Mean Prediction per year, per GDP
         self.MeanPredictionGraph(MeanPredictionTrainYears, MeanPredictionTestYears, 'Year')
@@ -541,30 +570,38 @@ class ResultsMeasurements():
     def errPercentage(self, label, prediction):
         return (abs(label - prediction) / label) * 100
 
-    def errPercentageCalc(self,label,prediction):
-        errTable = pd.DataFrame({'label':label, 'prediction': prediction})
-        errTable['errPercentage'] = errTable.apply(lambda row: self.errPercentage(row['label'], row['prediction']), axis=1)
+    def errPercentageCalc(self, label, prediction):
+        errTable = pd.DataFrame({'label': label, 'prediction': prediction})
+        errTable['errPercentage'] = errTable.apply(lambda row: self.errPercentage(row['label'], row['prediction']),
+                                                   axis=1)
         return errTable['errPercentage'].mean()
 
     def ErrorPercentageGraph(self, errPer_train, errPer_test, x_axis):
-        DataVisualizations.simple2Dgraph(errPer_train[0], self.modelName+'\n Error Percentage per ' + x_axis + ', Train vs. Test', x_axis,'Error Percentage', 0, 100, \
-                                         [errPer_train[1], errPer_test[1]], ['Error Percentage Train', 'Error Percentage Test'], ['b', 'g'])
+        DataVisualizations.simple2Dgraph(errPer_train[0],
+                                         self.modelName + '\n Error Percentage per ' + x_axis + ', Train vs. Test',
+                                         x_axis, 'Error Percentage', 0, 100, \
+                                         [errPer_train[1], errPer_test[1]],
+                                         ['Error Percentage Train', 'Error Percentage Test'], ['b', 'g'])
 
     def ErrorPercentageSeriesYear(self, data, x_axis):
-        ErrorPercentage = pd.DataFrame([[i, self.errPercentageCalc(data[data[x_axis] == i].label, data[data[x_axis] == i].prediction)] \
-                                       for i in data[x_axis].unique()])
+        ErrorPercentage = pd.DataFrame(
+            [[i, self.errPercentageCalc(data[data[x_axis] == i].label, data[data[x_axis] == i].prediction)] \
+             for i in data[x_axis].unique()])
         return ErrorPercentage.sort_values(by=0, ascending=1)
 
     def ErrorPercentageSeriesGDP(self, data, x_axis):
         sortedData = data.sort_values(by='GDP', ascending=1)
         sortedData = np.array_split(sortedData, 30)
         ErrorPercentage = pd.DataFrame([[sortedData[i].iloc[[0]]['GDP'].item(), \
-                                         self.errPercentageCalc(sortedData[i].label, sortedData[i].prediction)] for i in range(len(sortedData))])
+                                         self.errPercentageCalc(sortedData[i].label, sortedData[i].prediction)] for i in
+                                        range(len(sortedData))])
         return ErrorPercentage.sort_values(by=0, ascending=1)
 
     def ErrorPercentageResults(self):
-        ErrorPercentageTrain = self.errPercentageCalc(self.trainRelevantData['prediction'], self.trainRelevantData['label'])
-        ErrorPercentageTest  = self.errPercentageCalc(self.testRelevantData['prediction'], self.testRelevantData['label'])
+        ErrorPercentageTrain = self.errPercentageCalc(self.trainRelevantData['prediction'],
+                                                      self.trainRelevantData['label'])
+        ErrorPercentageTest = self.errPercentageCalc(self.testRelevantData['prediction'],
+                                                     self.testRelevantData['label'])
 
         print("Error Percentage for Train data = " + str(ErrorPercentageTrain))
         print("Error Percentage for Test data = " + str(ErrorPercentageTest))
@@ -579,15 +616,15 @@ class ResultsMeasurements():
         self.ErrorPercentageGraph(ErrorPercentageTrainYears, ErrorPercentageTestYears, 'Year')
         self.ErrorPercentageGraph(ErrorPercentageTrainGDPs, ErrorPercentageTestGDPs, 'GDP')
 
+
 class ModelDump():
     @staticmethod
-    def dumpModeslToFiles(names, models):
-        for name, model in zip(names, models):
-            with open(os.path.join(dumped_models, name + '.pkl'), 'wb') as fid:
-                cPickle.dump(model, fid)
+    def dumpModelToFile(name, model):
+        with open(os.path.join(dumped_models, name + '.pkl'), 'wb') as fid:
+            cPickle.dump(model, fid)
+
     @staticmethod
-    def loadModelsFromFiles(names):
-        models = []
-        for name in names:
-            with open(os.path.join(dumped_models, name + '.pkl'), 'rb') as fid:
-                models.append(cPickle.load(fid))
+    def loadModelFromFile(name):
+        with open(os.path.join(dumped_models, name + '.pkl'), 'rb') as fid:
+            model = cPickle.load(fid)
+        return model
