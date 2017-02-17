@@ -340,6 +340,13 @@ class DataVisualizations:
         plt.ylim(ylim_start, ylim_end)
         plt.legend()
         plt.show()
+    @staticmethod
+    def distPlot(x_axis, title, xlabel, ylabel, bins, kde):
+        sns.distplot(x_axis, bins = bins, kde = kde)
+        plt.title(title)
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.show()
 
 
 class ImagesUtils:
@@ -452,7 +459,7 @@ class ResultsMeasurements():
         # A dataframe containing Years, GDP Per Capita, Labels, Predictions
         self.model = model
         self.modelName = modelName
-        self.trainRelevantData = pd.DataFrame(trainData['year'])
+        self.trainRelevantData = pd.DataFrame(trainData['GDP per capita (constant 2005 US$)'])
         self.trainRelevantData['GDP'] = trainData['GDP per capita (constant 2005 US$)']
         self.trainRelevantData['year'] = trainData['year']
         self.trainRelevantData['country'] = trainData['country']
@@ -468,7 +475,7 @@ class ResultsMeasurements():
         self.trainRelevantData.is_copy = False
         self.trainFactors = trainFactors
 
-        self.testRelevantData = pd.DataFrame(testData['year'])
+        self.testRelevantData = pd.DataFrame(testData['GDP per capita (constant 2005 US$)'])
         self.testRelevantData['GDP'] = testData['GDP per capita (constant 2005 US$)']
         self.testRelevantData['year'] = testData['year']
         self.testRelevantData['country'] = testData['country']
