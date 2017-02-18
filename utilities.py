@@ -1,103 +1,6 @@
-import pandas as pd
-import numpy as np
-import seaborn as sns
-import sklearn
-from sklearn.utils import shuffle
-import matplotlib.pyplot as plt
-import matplotlib.cm
-import pathlib
-import csv
-import os
-import zipfile
-import math
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import random
-from sklearn.model_selection import train_test_split
+from global_variables import *
 
-# for map graphical view:
-import matplotlib.cm
-import matplotlib as mpl
-from geonamescache import GeonamesCache
-from matplotlib.patches import Polygon
-from matplotlib.collections import PatchCollection
-from mpl_toolkits.basemap import Basemap
-
-# for PCA:
-from sklearn.cluster import KMeans
-from sklearn.decomposition import PCA
-
-# for outliers detections
-from sklearn.linear_model import RANSACRegressor
-from sklearn.linear_model import HuberRegressor
-import statsmodels.api as sm
-
-# for images comparison:
-import cv2
-import matplotlib
-import matplotlib.pyplot as plt
-from PIL import Image
-
-# model for feature selection:
-from sklearn import datasets, linear_model, decomposition
-from sklearn.linear_model import ElasticNetCV
-from sklearn.pipeline import Pipeline
-import sklearn.preprocessing as sp
-import sklearn.feature_selection as fs
-from sklearn import kernel_ridge
-# import skfeature as skf
-
-# Import the random forest model.
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error
-# from sklearn.grid_search import GridSearchCV
-
-# Imports for kernel ridge:
-from sklearn.model_selection import GridSearchCV
-
-# Imports for Results check
-from scipy import stats
-from sklearn.metrics import r2_score
-from sklearn.linear_model import LinearRegression
-from sklearn import linear_model
-from sklearn.linear_model import Ridge
-from sklearn.kernel_ridge import KernelRidge
-
-# cPickle for model fit download to file
-import _pickle as cPickle
-
-# loading bar
-from ipywidgets import FloatProgress
-from IPython.display import display
-
-# Data paths
-path_complete_data = os.path.join('merged_data_ready', 'merged_data.csv')
-zip_file_path = os.path.join('raw_data', 'DB_Data', 'Edstast_data.zip')
-path = os.path.join('raw_data', 'DB_Data', 'Edstast_data.csv')
-path_fixed = os.path.join('raw_data', 'DB_Data', 'Edstast_data_fixed.csv')
-input_labels = os.path.join('raw_data', 'Labels', 'Happy_Planet_Index_Data')
-
-# Paths for the graphical map visualization use
-countries_codes = os.path.join('raw_data', 'DB_Data', 'WDI_Country.csv')
-shapefile = os.path.join('map_files', 'ne_10m_admin_0_countries')
-template_image = os.path.join('map_files', 'imgfile.png')
-globe_plots = 'globe_plots'
-uncorrolated_plots = 'uncorrolated_images'
-
-# Dumped models path
-dumped_models = 'dumped_models'
-
-# Years with labels
-rellevant_years_for_labels = ['1961', '1962', '1963', '1964', '1965', '1966', '1967', '1968', '1969', \
-                              '1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', \
-                              '1970', '1971', '1972', '1973', '1974', '1975', '1976', '1977', '1978', '1979', \
-                              '1980', '1981', '1982', '1983', '1984', '1985', '1986', '1987', '1988', '1989', \
-                              '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2009', '2012', '2016']
-rellevant_years = [year + '.00' for year in rellevant_years_for_labels]
-classifiers = ['Random_Forest', 'Linear_Regression', 'Lasso', 'Ridge', 'Kernel_Ridge']
-
-
-class DataPreparation():
+class DataPreparation:
     @staticmethod
     def retriveMergedFilePath():
         return path_complete_data
@@ -379,9 +282,31 @@ class ImagesUtils:
         return output
 
 
-class OutliersDetection():
+class OutliersDetection:
     @staticmethod
-    def avg_r2(g_factors, g_class, n_iter):
+    def linearityProving(train_factors, train_class, show_plots):
+        print("Applying OLS on train data and checking model assumptions")
+        regr = linear_model.LinearRegression()
+        regr.fit(train_factors, train_class)
+        r2 = regr.score(train_factors, train_class)
+        print("train R^2: %.4f " % (r2))
+        res = train_class - regr.predict(train_factors)
+        y, x = res, regr.predict(train_factors)
+        print("residuals appear to behave randomly, it suggests that the linear model fits the data well")
+        if button_plots.value:
+            fig = plt.figure(figsize=(5, 4))
+            ax = fig.add_subplot(1, 1, 1)  # one row, one column, first plot
+            ax.scatter(x, y, c="blue", alpha=.1, s=300)
+            ax.set_title("residuals vs. predicted:")
+            ax.set_xlabel("predicted")
+            ax.set_ylabel("residuals)")
+            plt.show()
+        print("residuals appear to be normally distributed")
+        if show_plots:
+            fig = sm.qqplot(res)
+            plt.show()
+    @staticmethod
+    def avgR2(g_factors, g_class, n_iter):
         sum = 0.0
         for i in range(n_iter):
             X_train, X_test, y_train, y_test = train_test_split(g_factors, g_class, test_size=0.4, random_state=1)
@@ -391,12 +316,12 @@ class OutliersDetection():
         return sum / (n_iter * (1.0))
 
     @staticmethod
-    def remove_outliers_rlm(train_factors, train_class, train_data, i, show_plots):
+    def removeOutliersRlm(train_factors, train_class, train_data, i, show_plots):
         for i in range(i):
             amount = 0
             dropped_rows = np.asarray([])
             print("Stage", i)
-            validation_r_squared = OutliersDetection.avg_r2(train_factors, train_class, 100)
+            validation_r_squared = OutliersDetection.avgR2(train_factors, train_class, 100)
             print("validation R^2, %.4f " % (validation_r_squared))
             rob = sklearn.linear_model.HuberRegressor()
             X = np.asarray(train_factors)
@@ -436,7 +361,7 @@ class OutliersDetection():
         print("After final stage")
         X = np.asarray(train_factors)
         Y = np.asarray(train_class)
-        validation_r_squared = OutliersDetection.avg_r2(train_factors, train_class, 100)
+        validation_r_squared = OutliersDetection.avgR2(train_factors, train_class, 100)
         print("validation R^2, %.4f " % (validation_r_squared))
         rob = sklearn.linear_model.HuberRegressor()
         rob.fit(X, Y)
@@ -452,7 +377,40 @@ class OutliersDetection():
             ax.set_ylabel("residuals")
             plt.show()
         return train_factors, train_class, train_data
+    @staticmethod
+    def removeOutliersPCA(train_factors, train_class, train_data, outliers_indecies, show_plots):
+        f = FloatProgress(min=0, max=100)
+        display(f)
 
+        enet = ElasticNetCV(max_iter=5000, cv=10, n_jobs=-1)
+        enet.fit(train_factors, train_class)
+        train_r_squared_with_outliers = enet.score \
+            (train_factors, train_class)
+        f.value += 45
+
+        training_data_without_outliers = train_factors.drop(outliers_indecies, inplace=False)
+        training_class_without_outliers = train_class.drop(outliers_indecies, inplace=False)
+
+        enet.fit(training_data_without_outliers, training_class_without_outliers)
+        train_r_squared_without_outliers = enet.score \
+            (training_data_without_outliers, training_class_without_outliers)
+
+        f.value += 45
+
+        print('R^2 on validation set with outliers:', train_r_squared_with_outliers, \
+              ', and without outliers:', train_r_squared_without_outliers)
+        if (train_r_squared_without_outliers < train_r_squared_with_outliers):
+            print('Removing outliers from training set.')
+            train_factors = train_factors.drop(train_factors.index[outliers_indecies])
+            train_class = train_class.drop(train_class.index[outliers_indecies])
+            train_data = train_data.drop(train_data.index[outliers_indecies])
+            if show_plots:
+                print('2D PCA after removal:')
+                plot_columns, labels = DataVisualizations.twoDimPCAandClustering(train_factors, button_plots.value)
+        else:
+            print('Leaving outliers in the training set.')
+        f.value += 10
+        return train_factors, train_class, train_data
 
 class ResultsMeasurements():
     def __init__(self, loadModel, trainData, testData, trainFactors, testFactors, trainClass, testClass, model, modelName):
@@ -632,6 +590,18 @@ class ResultsMeasurements():
         self.ErrorPercentageGraph(ErrorPercentageTrainYears, ErrorPercentageTestYears, 'Year')
         self.ErrorPercentageGraph(ErrorPercentageTrainGDPs, ErrorPercentageTestGDPs, 'GDP')
 
+    def plotForModel(self, request):
+        if request == 'None':
+            print('Please choose an option')
+        if request == 'Error Percentage Results':
+            self.ErrorPercentageResults()
+        if request == 'Mean Prediction Results':
+            self.MeanPredictionResults()
+        if request == 'R-Squared Results':
+            self.RSquaredResults()
+        if request == 'Distribution Results':
+            self.DistributionResults()
+
 
 class ModelDump():
     @staticmethod
@@ -644,3 +614,23 @@ class ModelDump():
         with open(os.path.join(dumped_models, name + '.pkl'), 'rb') as fid:
             model = cPickle.load(fid)
         return model
+
+def clicked(b):
+    temp = b.tooltip
+    if b.value == True:
+        b.tooltip = b.description
+        b.description = temp
+        b.value = False
+    else:
+        b.tooltip = b.description
+        b.description = temp
+        b.value = True
+
+button_exec = widgets.Button(description=turn_on_exec, tooltip=turn_off_exec, value=True)
+button_exec.on_click(clicked)
+
+button_plots = widgets.Button(description=turn_off_plots, tooltip=turn_on_plots, value=True)
+button_plots.on_click(clicked)
+
+display(button_exec)
+display(button_plots)
