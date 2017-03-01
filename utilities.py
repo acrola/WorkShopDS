@@ -80,8 +80,6 @@ class DataPreparation:
         # merge (by inner join) the data with the labels
         DataPreparation.mergeDataWithLabels(df, labels_df)
         f.value += 50
-
-
 class MapVisualizations:
     @staticmethod
     def plotDataOnMap(data, year='mean', feature="Happy Planet Index", binary=False, descripton=''):
@@ -178,38 +176,38 @@ class MapVisualizations:
         f.value += 20
 
     @staticmethod
-    def plotUncorrolatedCountries(im1, im2, output):
-        img1 = cv2.imread(im1, 1)
-        img2 = cv2.imread(im2, 1)
-        null_img = cv2.imread(template_image, 1)
+    def plotMap(overall_data,corr_features, request):
+        if request == 'None':
+            print('Please choose an option')
+        if request == 'Plot the Happy Planet Index over the globe':
+            MapVisualizations.plotDataOnMap(overall_data, feature='Happy Planet Index', year='mean')
+        if request == 'Plot the 1st most correlated feature over the globe':
+            MapVisualizations.plotDataOnMap(overall_data, feature=corr_features[0], year='mean')
+        if request == 'Plot the 2nd most correlated feature over the globe':
+            MapVisualizations.plotDataOnMap(overall_data, feature=corr_features[1], year='mean')
+        if request == 'Plot the 3rd most correlated feature over the globe':
+            MapVisualizations.plotDataOnMap(overall_data, feature=corr_features[2], year='mean')
 
-        img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
-        img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
-        null_img = cv2.cvtColor(null_img, cv2.COLOR_BGR2GRAY)
+    @staticmethod
+    def interactMaps(overall_data,corr_features):
+        def plotMap(request):
+            if request == 'None':
+                print('Please choose an option')
+            if request == 'Plot the Happy Planet Index over the globe':
+                MapVisualizations.plotDataOnMap(overall_data, feature='Happy Planet Index', year='mean')
+            if request == 'Plot the 1st most correlated feature over the globe':
+                MapVisualizations.plotDataOnMap(overall_data, feature=corr_features[0], year='mean')
+            if request == 'Plot the 2nd most correlated feature over the globe':
+                MapVisualizations.plotDataOnMap(overall_data, feature=corr_features[1], year='mean')
+            if request == 'Plot the 3rd most correlated feature over the globe':
+                MapVisualizations.plotDataOnMap(overall_data, feature=corr_features[2], year='mean')
 
-        height1, width1 = img1.shape
-        height2, width2 = img2.shape
-        height3, width3 = null_img.shape
-
-        min_h = min(height1, height2, height3)
-        min_w = min(width1, width2, width3)
-
-        img1 = img1[:min_h, :min_w]
-        img2 = img2[:min_h, :min_w]
-        null_img = null_img[:min_h, :min_w]
-
-        crop_img = cv2.subtract(img1, img2)[65:900, :]
-
-        null_img = null_img[65:900, :]
-        thresh = (255 - crop_img)
-
-        cv2.addWeighted(thresh, 0.5, null_img, 0.5, 0, thresh)
-        (threshold, thresh) = cv2.threshold(thresh, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-        flag = cv2.imwrite(output, thresh)
-        plt.axis('off')
-        plt.imshow(thresh, cmap='gray', interpolation='bicubic'), plt.show()
-
-
+        interact(plotMap,\
+                 request=RadioButtons(options= ['None', 'Plot the Happy Planet Index over the globe',\
+                                                'Plot the 1st most correlated feature over the globe',\
+                                                'Plot the 2nd most correlated feature over the globe',\
+                                                'Plot the 3rd most correlated feature over the globe'],\
+                                      description='Select map to plot:', disabled=False))
 class DataVisualizations:
     @staticmethod
     def twoDimPCAandClustering(factors, show_plots):
@@ -250,8 +248,6 @@ class DataVisualizations:
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
         plt.show()
-
-
 class ImagesUtils:
     @staticmethod
     def concat_images(imga, imgb):
@@ -280,8 +276,56 @@ class ImagesUtils:
             else:
                 output = ImagesUtils.concat_images(output, img)
         return output
+def creatAlternativeModels(train_data, train_factors, train_class, train_countries, test_data,\
+                           test_factors, test_class, test_countries):
+    global alternativeModles
+    alternativeModles = [alternativeModel(runType, train_data, train_factors, train_class, train_countries, test_data, \
+                                          test_factors, test_class, test_countries) for runType in dataTypes]
+    alternativeModles = dict([(dataTypes[i], alternativeModles[i]) for i in range(len(dataTypes))])
+    return alternativeModles
+def updateAlternativeModles(newAlternativeModles):
+    global alternativeModles
+    alternativeModles = newAlternativeModles
+def printAlters():
+    for data in dataTypes:
+        print(data)
+        print(alternativeModles[data].train_factors.shape)
+        print(alternativeModles[data].test_factors.shape)
 
-
+class alternativeModel():
+    def __init__(self,runType,train_data,train_factors,train_class,train_countries,test_data,test_factors,test_class,test_countries):
+        self.train_countries = train_countries
+        self.test_countries  = test_countries
+        if runType == 'no countries' or runType == 'no years':
+            self.train_data  = train_data.copy()
+            self.test_data   = test_data.copy()
+            self.train_class = train_class.copy()
+            self.test_class  = test_class.copy()
+            if runType == 'no countries':
+                self.train_factors = train_factors.drop(train_data.filter(regex=("country_.*")).columns, axis=1)
+                self.test_factors  = test_factors.drop(test_data.filter(regex=("country_.*")).columns,axis=1)
+            if runType == 'no years':
+                self.train_factors = train_factors.drop(['year'],axis=1)
+                self.test_factors  = test_factors.drop(['year'],axis=1)
+        if runType == 'no country' or runType == 'no year':
+            all_factors   = pd.concat([train_factors, test_factors])
+            all_countries = pd.concat([train_countries, test_countries])
+            all_classes   = pd.concat([train_class, test_class])
+            all_data                       = all_factors
+            all_data['country']            = all_countries
+            all_data['Happy Planet Index'] = all_classes
+            if runType == 'no country':
+                self.train_data = all_data[all_data.country!='Israel']
+                self.test_data  = all_data[all_data.country=='Israel']
+                self.train_data = self.train_data.drop(['country_Israel'])
+                self.test_data  = self.test_data.drop(['country_Israel'])
+            if runType == 'no year':
+                self.train_data = all_data[all_data.country!=4]
+                self.test_data  = all_data[all_data.country==4]
+            self.train_factors = self.train_data.drop(['country','Happy Planet Index'],axis=1)
+            self.test_factors  = self.test_data.drop(['country','Happy Planet Index'],axis=1)
+            self.train_class   = self.train_data['Happy Planet Index']
+            self.test_class    = self.test_data['Happy Planet Index']
 class OutliersDetection:
     @staticmethod
     def linearityProving(train_factors, train_class, show_plots):
@@ -314,6 +358,13 @@ class OutliersDetection:
             regr.fit(X_test, y_test)
             sum += regr.score(X_test, y_test)
         return sum / (n_iter * (1.0))
+    @staticmethod
+    def allDataLinearityProving(request):
+        if request == "None" :
+            print('Please choose an option')
+        else:
+            OutliersDetection.linearityProving(alternativeModles[request].train_factors,\
+                                               alternativeModles[request].train_class, button_plots.value)
 
     @staticmethod
     def removeOutliersRlm(train_factors, train_class, train_data, i, show_plots):
@@ -377,6 +428,19 @@ class OutliersDetection:
             ax.set_ylabel("residuals")
             plt.show()
         return train_factors, train_class, train_data
+
+    @staticmethod
+    def printOutlierCountries(outliers_df_AltModels,outliers_indecies_AltModels):
+        def printCountries(request):
+            if request == "None":
+                print("Please choose an option")
+            else:
+                print(outliers_df_AltModels[request]['country'].head(min(10, len(outliers_indecies_AltModels[request]))))
+        interact(printCountries, \
+                 request=RadioButtons(options=['None']+dataTypes, \
+                                          description='Select which data\'s outliers countries to print:',\
+                                      disabled=False))
+
     @staticmethod
     def removeOutliersPCA(train_factors, train_class, train_data, outliers_indecies, show_plots):
         f = FloatProgress(min=0, max=100)
@@ -483,7 +547,7 @@ class ResultsMeasurements():
         return stats.kstest(predictions, 'norm')
 
     def DistributionGraphicCalc(self, predictions, binsNum, title):
-        sns.distplot(predictions, bins=binsNum, kde=True)
+        distplot(predictions, bins=binsNum, kde=True)
         plt.title(self.modelName + '\n Histogram of Happy Planet Index values: ' + title)
         plt.xlabel('HPI')
         plt.ylabel('density')
@@ -601,7 +665,11 @@ class ResultsMeasurements():
             self.RSquaredResults()
         if request == 'Distribution Results':
             self.DistributionResults()
-
+    def interactResults(self):
+        interact(self.plotForModel,\
+                 request=RadioButtons(options= ['None', 'R-Squared Results','Distribution Results',\
+                                                'Mean Prediction Results','Error Percentage Results'],\
+                                      description='Select data to plot:', disabled=False))
 
 class ModelDump():
     @staticmethod
