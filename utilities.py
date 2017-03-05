@@ -547,7 +547,7 @@ class ResultsMeasurements():
         return stats.kstest(predictions, 'norm')
 
     def DistributionGraphicCalc(self, predictions, binsNum, title):
-        distplot(predictions, bins=binsNum, kde=True)
+        sns.distplot(predictions, bins=binsNum, kde=True)
         plt.title(self.modelName + '\n Histogram of Happy Planet Index values: ' + title)
         plt.xlabel('HPI')
         plt.ylabel('density')
