@@ -35,4 +35,4 @@ turn_off_plots = 'Don\'t show plots'
 warnings.filterwarnings('ignore')
 
 # Multiple Data types
-dataTypes = ["no countries", "no years"]#, "no year"]
+dataTypes = ["no countries", "no years"]

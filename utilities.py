@@ -463,7 +463,7 @@ class OutliersDetection:
 
         print('R^2 on validation set with outliers:', train_r_squared_with_outliers, \
               ', and without outliers:', train_r_squared_without_outliers)
-        if (train_r_squared_without_outliers < train_r_squared_with_outliers):
+        if (abs(train_r_squared_without_outliers - train_r_squared_with_outliers) > 0.03):
             print('Removing outliers from training set.')
             train_factors = train_factors.drop(train_factors.index[outliers_indecies])
             train_class = train_class.drop(train_class.index[outliers_indecies])
@@ -472,7 +472,7 @@ class OutliersDetection:
                 print('2D PCA after removal:')
                 plot_columns, labels = DataVisualizations.twoDimPCAandClustering(train_factors, button_plots.value)
         else:
-            print('Leaving outliers in the training set.')
+            print('Leaving outliers in the training set, did not exceed 0.3 threshold in the difference between the R^2s')
         f.value += 10
         return train_factors, train_class, train_data
 
