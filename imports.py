@@ -71,5 +71,5 @@ import _pickle as cPickle
 # loading bar
 from ipywidgets import FloatProgress
 from IPython.display import display
-from ipywidgets import interact, RadioButtons
+from ipywidgets import interact, interactive, RadioButtons
 import ipywidgets as widgets

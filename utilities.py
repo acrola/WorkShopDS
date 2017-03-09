@@ -487,7 +487,6 @@ class OutliersDetection:
         else:
             print('\tLeaving outliers in the training set, did not exceed 0.3 threshold in the difference between the R^2s. \n')
         return train_factors, train_class, train_data
-
 class ResultsMeasurements():
     def __init__(self, loadModel, trainData, testData, trainFactors, testFactors, trainClass, testClass, model, modelName):
         # A dataframe containing Years, GDP Per Capita, Labels, Predictions
@@ -667,8 +666,6 @@ class ResultsMeasurements():
         self.ErrorPercentageGraph(ErrorPercentageTrainGDPs, ErrorPercentageTestGDPs, 'GDP')
 
     def plotForModel(self, request):
-        if request == 'None':
-            print('Please choose an option')
         if request == 'Error Percentage Results':
             self.ErrorPercentageResults()
         if request == 'Mean Prediction Results':
@@ -678,10 +675,24 @@ class ResultsMeasurements():
         if request == 'Distribution Results':
             self.DistributionResults()
     def interactResults(self):
-        interact(self.plotForModel,\
-                 request=RadioButtons(options= ['None', 'R-Squared Results','Distribution Results',\
-                                                'Mean Prediction Results','Error Percentage Results'],\
-                                      description='Select data to plot:', disabled=False))
+        requests = widgets.ToggleButtons(
+                    options=['None', 'R-Squared Results', 'Distribution Results', \
+                                         'Mean Prediction Results', 'Error Percentage Results'],
+                    description='Results:',
+                    disabled=False,
+                    button_style='', # 'success', 'info', 'warning', 'danger' or ''
+                    tooltip='Description',
+                #     icon='check'
+                )
+        plotButtons = widgets.interactive(self.plotForModel, request=requests)
+        return plotButtons
+    @staticmethod
+    def tabDisplay(models):
+        children = [models[data].interactResults() for data in dataTypes]
+        tab = widgets.Tab(children=children)
+        for i in range(len(dataTypes)):
+            tab.set_title(i, dataTypes[i])
+        return tab
 
 class ModelDump():
     @staticmethod
@@ -694,7 +705,6 @@ class ModelDump():
         with open(os.path.join(dumped_models, name + '.pkl'), 'rb') as fid:
             model = cPickle.load(fid)
         return model
-
 class AlternativeModels():
     @staticmethod
     def creatAlternativeModels(train_data, train_factors, train_class, train_countries, test_data,\
@@ -718,8 +728,6 @@ class AlternativeModels():
             print(data)
             print(alternativeModles[data].train_factors.shape)
             print(alternativeModles[data].test_factors.shape)
-
-
 def clicked(b):
     temp = b.tooltip
     if b.value == True:
