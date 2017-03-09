@@ -36,4 +36,5 @@ turn_off_plots = 'Don\'t show plots'
 warnings.filterwarnings('ignore')
 
 # Multiple Data types
-dataTypes = ["no countries", "no years"]
+dataTypes = ['main data', 'no countries', 'no years']
+types_for_ineract = ['None'] + dataTypes

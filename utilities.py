@@ -266,6 +266,13 @@ class alternativeModel():
     def __init__(self,runType,train_data,train_factors,train_class,train_countries,test_data,test_factors,test_class,test_countries):
         self.train_countries = train_countries
         self.test_countries  = test_countries
+        if runType == 'main data':
+            self.train_data = train_data.copy()
+            self.test_data = test_data.copy()
+            self.train_class = train_class.copy()
+            self.test_class = test_class.copy()
+            self.train_factors = train_factors.copy()
+            self.test_factors = test_factors.copy()
         if runType == 'no countries' or runType == 'no years':
             self.train_data  = train_data.copy()
             self.test_data   = test_data.copy()
@@ -398,6 +405,16 @@ class OutliersDetection:
             ax.set_ylabel("residuals")
             plt.show()
         return train_factors, train_class, train_data
+
+    @staticmethod
+    def allDataRemoveOutliersRlm(request):
+        if request == "None":
+            print('Please choose an option')
+        else:
+            alternativeModles[request].train_factors, alternativeModles[request].train_class, alternativeModles[
+                request].train_data = \
+                OutliersDetection.removeOutliersRlm(alternativeModles[request].train_factors,
+                    alternativeModles[request].train_class, alternativeModles[request].train_data, 1, button_plots.value)
 
     @staticmethod
     def printOutlierCountries(outliers_df_AltModels,outliers_indecies_AltModels):
