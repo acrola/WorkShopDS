@@ -14,6 +14,8 @@ template_image = os.path.join('map_files', 'imgfile.png')
 globe_plots = 'globe_plots'
 uncorrolated_plots = 'uncorrolated_images'
 
+# Paths for offline plots
+outliers_detection = os.path.join('offline_plots', 'outliers_detection_plots')
 # Dumped models path
 dumped_models = 'dumped_models'
 
@@ -38,3 +40,4 @@ warnings.filterwarnings('ignore')
 # Multiple Data types
 dataTypes = ['main data', 'no countries', 'no years']
 types_for_ineract = ['None'] + dataTypes
+

@@ -196,26 +196,43 @@ class MapVisualizations:
                                       description='Select image to plot:', disabled=False))
 class DataVisualizations:
     @staticmethod
-    def twoDimPCAandClustering(factors, show_plots):
+    def twoDimPCAandClustering(factors,data_type_name):
         # Initialize the model with 2 parameters -- number of clusters and random state.
+        file_data_name = data_type_name.replace(" ", "_")
         kmeans_model = KMeans(n_clusters=5, random_state=1)
         # Get only the numeric columns from games.
         # Fit the model using the good columns.
         kmeans_model.fit(factors)
         # Get the cluster assignments.
         labels = kmeans_model.labels_
-        # Import the PCA model.
-
         # Create a PCA model.
         pca_2 = PCA(2)
         # Fit the PCA model on the numeric columns from earlier.
         plot_columns = pca_2.fit_transform(factors)
-        if show_plots:
-            # Make a scatter plot of each game, shaded according to cluster assignment.
-            plt.scatter(x=plot_columns[:, 0], y=plot_columns[:, 1], c=labels)
-            # Show the plot.
-            plt.show()
+        # Make a scatter plot of each game, shaded according to cluster assignment.
+        fig1 = plt.figure(figsize=(5, 4))
+        # Saving plot as an image
+        ax = fig1.add_subplot(1, 1, 1)  # one row, one column, first plot
+        ax.scatter(x=plot_columns[:, 0], y=plot_columns[:, 1], c=labels)
+        ax.set_title("Two dim. PCA")
+        ax.set_xlabel("Eigenvector 1")
+        ax.set_ylabel("Eigenvector 2")
+        plot_path = os.path.join(outliers_detection, file_data_name + '_PCA')
+        plt.savefig(plot_path, bbox_inches='tight', pad_inches=.2)
+        plt.close(fig1)
         return plot_columns, labels
+    @staticmethod
+    def allDataTwoDimPCAandClustering(request):
+        if request == "None":
+            print('Please choose an option')
+        else:
+            file_data_name = request.replace(" ", "_")
+            image_initial_path = os.path.join(outliers_detection, file_data_name + '_PCA.png')
+            fig1 = plt.figure(1)
+            img1 = mpimg.imread(image_initial_path)
+            imgplot1 = plt.imshow(img1)
+            imgplot1.axes.get_xaxis().set_visible(False)
+            imgplot1.axes.get_yaxis().set_visible(False)
 
     @staticmethod
     def simple2Dgraph(x_axis, title, xlabel, ylabel, ylim_start, ylim_end, ys, definitions, colors):
@@ -250,7 +267,7 @@ class ImagesUtils:
         return new_img
     @staticmethod
     def show2Images(field1, field2):
-        fig = plt.figure()
+        fig = plt.figure(figsize=(20,10))
         a = fig.add_subplot(1, 2, 1)
         img1 = mpimg.imread(field1)
         imgplot1 = plt.imshow(img1)
@@ -261,7 +278,13 @@ class ImagesUtils:
         imgplot2 = plt.imshow(img2)
         imgplot2.axes.get_xaxis().set_visible(False)
         imgplot2.axes.get_yaxis().set_visible(False)
-
+class alternativeModles_string:
+    def __init__(self,rlm_initial_r2, rlm_final_r2, rlm_n_rows_dropped, pca_r2_compared, pca_decision):
+        self.rlm_initial_r2 = rlm_initial_r2
+        self.rlm_final_r2 = rlm_final_r2
+        self.rlm_n_rows_dropped = rlm_n_rows_dropped
+        self.pca_r2_compared = pca_r2_compared
+        self.pca_decision = pca_decision
 class alternativeModel():
     def __init__(self,runType,train_data,train_factors,train_class,train_countries,test_data,test_factors,test_class,test_countries):
         self.train_countries = train_countries
@@ -305,7 +328,7 @@ class alternativeModel():
             self.test_class    = self.test_data['Happy Planet Index']
 class OutliersDetection:
     @staticmethod
-    def linearityProving(train_factors, train_class, show_plots):
+    def linearityProving(train_factors, train_class):
         print("Applying OLS on train data and checking model assumptions")
         regr = linear_model.LinearRegression()
         regr.fit(train_factors, train_class)
@@ -314,18 +337,16 @@ class OutliersDetection:
         res = train_class - regr.predict(train_factors)
         y, x = res, regr.predict(train_factors)
         print("residuals appear to behave randomly, it suggests that the linear model fits the data well")
-        if button_plots.value:
-            fig = plt.figure(figsize=(5, 4))
-            ax = fig.add_subplot(1, 1, 1)  # one row, one column, first plot
-            ax.scatter(x, y, c="blue", alpha=.1, s=300)
-            ax.set_title("residuals vs. predicted:")
-            ax.set_xlabel("predicted")
-            ax.set_ylabel("residuals)")
-            plt.show()
+        fig = plt.figure(figsize=(5, 4))
+        ax = fig.add_subplot(1, 1, 1)  # one row, one column, first plot
+        ax.scatter(x, y, c="blue", alpha=.1, s=300)
+        ax.set_title("residuals vs. predicted:")
+        ax.set_xlabel("predicted")
+        ax.set_ylabel("residuals)")
+        plt.show()
         print("residuals appear to be normally distributed")
-        if show_plots:
-            fig = sm.qqplot(res)
-            plt.show()
+        fig = sm.qqplot(res)
+        plt.show()
     @staticmethod
     def avgR2(g_factors, g_class, n_iter):
         sum = 0.0
@@ -341,16 +362,16 @@ class OutliersDetection:
             print('Please choose an option')
         else:
             OutliersDetection.linearityProving(alternativeModles[request].train_factors,\
-                                               alternativeModles[request].train_class, button_plots.value)
-
+                                               alternativeModles[request].train_class)
     @staticmethod
-    def removeOutliersRlm(train_factors, train_class, train_data, i, show_plots):
+    def removeOutliersRlm(train_factors, train_class, train_data, i,data_type_name):
+        file_data_name = data_type_name.replace(" ", "_")
         for i in range(i):
             amount = 0
             dropped_rows = np.asarray([])
-            print("Stage", i)
             validation_r_squared = OutliersDetection.avgR2(train_factors, train_class, 100)
-            print("validation R^2, %.4f " % (validation_r_squared))
+            alternativeModles_strings[data_type_name].rlm_initial_r2 = \
+                "• Validation R^2 before outliers\' removal, %.4f " % (validation_r_squared)
             rob = sklearn.linear_model.HuberRegressor()
             X = np.asarray(train_factors)
             Y = np.asarray(train_class)
@@ -359,14 +380,16 @@ class OutliersDetection:
             # plotting res vs. pred before dropping outliers
             res = [val for val in (Y - y_predicted)]
             y, x = res, rob.predict(X)
-            if show_plots:
-                fig = plt.figure(figsize=(5, 4))
-                ax = fig.add_subplot(1, 1, 1)  # one row, one column, first plot
-                ax.scatter(x, y, c="blue", alpha=.1, s=300)
-                ax.set_title("residuals vs. predicted:")
-                ax.set_xlabel("predicted")
-                ax.set_ylabel("residuals)")
-                plt.show()
+            #Saving plot as an image
+            fig1 = plt.figure(figsize=(5, 4))
+            ax = fig1.add_subplot(1, 1, 1)  # one row, one column, first plot
+            ax.scatter(x, y, c="blue", alpha=.1, s=300)
+            ax.set_title("residuals vs. predicted - initial")
+            ax.set_xlabel("predicted")
+            ax.set_ylabel("residuals")
+            plot_path = os.path.join(outliers_detection, file_data_name + '_residuals_initial')
+            plt.savefig(plot_path, bbox_inches='tight', pad_inches=.2)
+            plt.close(fig1)
             # dropping rows
             res = [abs(val) for val in (Y - y_predicted)]
             rresid = list(zip(range(train_factors.shape[0]), res))
@@ -381,29 +404,31 @@ class OutliersDetection:
             train_factors = train_factors.drop(train_factors.index[deleted_index])
             train_class = train_class.drop(train_class.index[deleted_index])
             train_data = train_data.drop(train_data.index[deleted_index])
-            print("%d rows were dropped" % (amount))
+            alternativeModles_strings[data_type_name].rlm_n_rows_dropped = "• %d rows were dropped" % (amount)
             train_factors.reset_index(drop=True, inplace=True)
             train_class.reset_index(drop=True, inplace=True)
             train_data.reset_index(drop=True, inplace=True)
             # res vs. pred after outliers dropping
-        print("After final stage")
         X = np.asarray(train_factors)
         Y = np.asarray(train_class)
         validation_r_squared = OutliersDetection.avgR2(train_factors, train_class, 100)
-        print("validation R^2, %.4f " % (validation_r_squared))
+        alternativeModles_strings[data_type_name].rlm_final_r2 = \
+            "• Validation R^2 after outliers\' removal, %.4f " % (validation_r_squared)
         rob = sklearn.linear_model.HuberRegressor()
         rob.fit(X, Y)
         y_predicted = rob.predict(X)
         res = [val for val in (Y - y_predicted)]
         y, x = res, rob.predict(X)
-        if show_plots:
-            fig = plt.figure(figsize=(5, 4))
-            ax = fig.add_subplot(1, 1, 1)
-            ax.scatter(x, y, c="purple", alpha=.1, s=300)
-            ax.set_title("residuals vs. predicted: final")
-            ax.set_xlabel("predicted")
-            ax.set_ylabel("residuals")
-            plt.show()
+        # Saving plot as an image
+        fig2 = plt.figure(figsize=(5, 4))
+        ax = fig2.add_subplot(1, 1, 1)
+        ax.scatter(x, y, c="purple", alpha=.1, s=300)
+        ax.set_title("residuals vs. predicted - final")
+        ax.set_xlabel("predicted")
+        ax.set_ylabel("residuals")
+        plot_path = os.path.join(outliers_detection, file_data_name + '_residuals_final')
+        plt.savefig(plot_path, bbox_inches='tight', pad_inches=.2)
+        plt.close(fig2)
         return train_factors, train_class, train_data
 
     @staticmethod
@@ -414,7 +439,20 @@ class OutliersDetection:
             alternativeModles[request].train_factors, alternativeModles[request].train_class, alternativeModles[
                 request].train_data = \
                 OutliersDetection.removeOutliersRlm(alternativeModles[request].train_factors,
-                    alternativeModles[request].train_class, alternativeModles[request].train_data, 1, button_plots.value)
+                    alternativeModles[request].train_class, alternativeModles[request].train_data,\
+                                                    1,request)
+    @staticmethod
+    def showResidualsRemoval(request):
+        if request == "None":
+            print('Please choose an option')
+        else:
+            file_data_name = request.replace(" ", "_")
+            image_initial_path = os.path.join(outliers_detection, file_data_name + '_residuals_initial.png')
+            image_final_path = os.path.join(outliers_detection, file_data_name + '_residuals_final.png')
+            print(alternativeModles_strings[request].rlm_initial_r2 + "\n")
+            print(alternativeModles_strings[request].rlm_n_rows_dropped + "\n")
+            print(alternativeModles_strings[request].rlm_final_r2 + "\n")
+            ImagesUtils.show2Images(image_initial_path, image_final_path)
 
     @staticmethod
     def printOutlierCountries(outliers_df_AltModels,outliers_indecies_AltModels):
@@ -429,38 +467,25 @@ class OutliersDetection:
                                       disabled=False))
 
     @staticmethod
-    def removeOutliersPCA(train_factors, train_class, train_data, outliers_indecies, show_plots):
-        f = FloatProgress(min=0, max=100)
-        display(f)
-
+    def removeOutliersPCA(train_factors, train_class, train_data, outliers_indecies):
         enet = ElasticNetCV(max_iter=5000, cv=10, n_jobs=-1)
         enet.fit(train_factors, train_class)
         train_r_squared_with_outliers = enet.score \
             (train_factors, train_class)
-        f.value += 45
-
         training_data_without_outliers = train_factors.drop(outliers_indecies, inplace=False)
         training_class_without_outliers = train_class.drop(outliers_indecies, inplace=False)
-
         enet.fit(training_data_without_outliers, training_class_without_outliers)
         train_r_squared_without_outliers = enet.score \
             (training_data_without_outliers, training_class_without_outliers)
-
-        f.value += 45
-
-        print('R^2 on validation set with outliers:', train_r_squared_with_outliers, \
+        print('\tR^2 on validation set with outliers:', train_r_squared_with_outliers, \
               ', and without outliers:', train_r_squared_without_outliers)
         if (abs(train_r_squared_without_outliers - train_r_squared_with_outliers) > 0.03):
-            print('Removing outliers from training set.')
+            print('\tRemoving outliers from training set. \n')
             train_factors = train_factors.drop(train_factors.index[outliers_indecies])
             train_class = train_class.drop(train_class.index[outliers_indecies])
             train_data = train_data.drop(train_data.index[outliers_indecies])
-            if show_plots:
-                print('2D PCA after removal:')
-                plot_columns, labels = DataVisualizations.twoDimPCAandClustering(train_factors, button_plots.value)
         else:
-            print('Leaving outliers in the training set, did not exceed 0.3 threshold in the difference between the R^2s')
-        f.value += 10
+            print('\tLeaving outliers in the training set, did not exceed 0.3 threshold in the difference between the R^2s. \n')
         return train_factors, train_class, train_data
 
 class ResultsMeasurements():
@@ -678,6 +703,8 @@ class AlternativeModels():
         alternativeModles = [alternativeModel(runType, train_data, train_factors, train_class, train_countries, test_data, \
                                               test_factors, test_class, test_countries) for runType in dataTypes]
         alternativeModles = dict([(dataTypes[i], alternativeModles[i]) for i in range(len(dataTypes))])
+        global alternativeModles_strings
+        alternativeModles_strings = dict([(data, alternativeModles_string("", "", "", "", "")) for data in dataTypes])
         return alternativeModles
 
     @staticmethod
