@@ -666,6 +666,8 @@ class ResultsMeasurements():
         self.ErrorPercentageGraph(ErrorPercentageTrainGDPs, ErrorPercentageTestGDPs, 'GDP')
 
     def plotForModel(self, request):
+        if request == 'None':
+            print("Please choose an option from the bar above")
         if request == 'Error Percentage Results':
             self.ErrorPercentageResults()
         if request == 'Mean Prediction Results':
