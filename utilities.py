@@ -176,19 +176,6 @@ class MapVisualizations:
         f.value += 20
 
     @staticmethod
-    def plotMap(overall_data,corr_features, request):
-        if request == 'None':
-            print('Please choose an option')
-        if request == 'Plot the Happy Planet Index over the globe':
-            MapVisualizations.plotDataOnMap(overall_data, feature='Happy Planet Index', year='mean')
-        if request == 'Plot the 1st most correlated feature over the globe':
-            MapVisualizations.plotDataOnMap(overall_data, feature=corr_features[0], year='mean')
-        if request == 'Plot the 2nd most correlated feature over the globe':
-            MapVisualizations.plotDataOnMap(overall_data, feature=corr_features[1], year='mean')
-        if request == 'Plot the 3rd most correlated feature over the globe':
-            MapVisualizations.plotDataOnMap(overall_data, feature=corr_features[2], year='mean')
-
-    @staticmethod
     def interactMaps(overall_data,corr_features):
         def plotMap(request):
             if request == 'None':
@@ -197,17 +184,16 @@ class MapVisualizations:
                 MapVisualizations.plotDataOnMap(overall_data, feature='Happy Planet Index', year='mean')
             if request == 'Plot the 1st most correlated feature over the globe':
                 MapVisualizations.plotDataOnMap(overall_data, feature=corr_features[0], year='mean')
-            if request == 'Plot the 2nd most correlated feature over the globe':
-                MapVisualizations.plotDataOnMap(overall_data, feature=corr_features[1], year='mean')
-            if request == 'Plot the 3rd most correlated feature over the globe':
-                MapVisualizations.plotDataOnMap(overall_data, feature=corr_features[2], year='mean')
+            if request == 'Plot both for comparison':
+                imgfile1 = os.path.join(globe_plots, 'Happy Planet Index' + '_' + 'mean' + '.png')
+                imgfile2 = os.path.join(globe_plots, corr_features[0] + '_' + 'mean' + '.png')
+                ImagesUtils.show2Images(imgfile1, imgfile2)
 
         interact(plotMap,\
                  request=RadioButtons(options= ['None', 'Plot the Happy Planet Index over the globe',\
                                                 'Plot the 1st most correlated feature over the globe',\
-                                                'Plot the 2nd most correlated feature over the globe',\
-                                                'Plot the 3rd most correlated feature over the globe'],\
-                                      description='Select map to plot:', disabled=False))
+                                                'Plot both for comparison'],\
+                                      description='Select image to plot:', disabled=False))
 class DataVisualizations:
     @staticmethod
     def twoDimPCAandClustering(factors, show_plots):
@@ -262,20 +248,20 @@ class ImagesUtils:
         new_img[:ha, :wa] = imga
         new_img[:hb, wa:wa + wb] = imgb
         return new_img
-
     @staticmethod
-    def concat_n_images(image_path_list):
-        """
-        Combines N color images from a list of image paths.
-        """
-        output = None
-        for i, img_path in enumerate(image_path_list):
-            img = plt.imread(img_path)[:, :]
-            if i == 0:
-                output = img
-            else:
-                output = ImagesUtils.concat_images(output, img)
-        return output
+    def show2Images(field1, field2):
+        fig = plt.figure()
+        a = fig.add_subplot(1, 2, 1)
+        img1 = mpimg.imread(field1)
+        imgplot1 = plt.imshow(img1)
+        imgplot1.axes.get_xaxis().set_visible(False)
+        imgplot1.axes.get_yaxis().set_visible(False)
+        img2 = mpimg.imread(field2)
+        a = fig.add_subplot(1, 2, 2)
+        imgplot2 = plt.imshow(img2)
+        imgplot2.axes.get_xaxis().set_visible(False)
+        imgplot2.axes.get_yaxis().set_visible(False)
+
 class alternativeModel():
     def __init__(self,runType,train_data,train_factors,train_class,train_countries,test_data,test_factors,test_class,test_countries):
         self.train_countries = train_countries
@@ -676,6 +662,7 @@ class AlternativeModels():
                                               test_factors, test_class, test_countries) for runType in dataTypes]
         alternativeModles = dict([(dataTypes[i], alternativeModles[i]) for i in range(len(dataTypes))])
         return alternativeModles
+
     @staticmethod
     def updateAlternativeModles(newAlternativeModles):
         global alternativeModles

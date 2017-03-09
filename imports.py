@@ -38,6 +38,7 @@ import cv2
 import matplotlib
 import matplotlib.pyplot as plt
 from PIL import Image
+import matplotlib.image as mpimg
 
 # model for feature selection:
 from sklearn import datasets, linear_model, decomposition
