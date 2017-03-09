@@ -26,6 +26,7 @@ rellevant_years_for_labels = ['1961', '1962', '1963', '1964', '1965', '1966', '1
 rellevant_years = [year + '.00' for year in rellevant_years_for_labels]
 classifiers = ['Random_Forest', 'Linear_Regression', 'Lasso', 'Ridge', 'Kernel_Ridge']
 
+# Buttons' variables
 turn_on_exec = 'Run long executions'
 turn_off_exec = 'Skip long executions'
 turn_on_plots = 'Show plots'

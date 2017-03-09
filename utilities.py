@@ -276,22 +276,6 @@ class ImagesUtils:
             else:
                 output = ImagesUtils.concat_images(output, img)
         return output
-def creatAlternativeModels(train_data, train_factors, train_class, train_countries, test_data,\
-                           test_factors, test_class, test_countries):
-    global alternativeModles
-    alternativeModles = [alternativeModel(runType, train_data, train_factors, train_class, train_countries, test_data, \
-                                          test_factors, test_class, test_countries) for runType in dataTypes]
-    alternativeModles = dict([(dataTypes[i], alternativeModles[i]) for i in range(len(dataTypes))])
-    return alternativeModles
-def updateAlternativeModles(newAlternativeModles):
-    global alternativeModles
-    alternativeModles = newAlternativeModles
-def printAlters():
-    for data in dataTypes:
-        print(data)
-        print(alternativeModles[data].train_factors.shape)
-        print(alternativeModles[data].test_factors.shape)
-
 class alternativeModel():
     def __init__(self,runType,train_data,train_factors,train_class,train_countries,test_data,test_factors,test_class,test_countries):
         self.train_countries = train_countries
@@ -682,6 +666,28 @@ class ModelDump():
         with open(os.path.join(dumped_models, name + '.pkl'), 'rb') as fid:
             model = cPickle.load(fid)
         return model
+
+class AlternativeModels():
+    @staticmethod
+    def creatAlternativeModels(train_data, train_factors, train_class, train_countries, test_data,\
+                               test_factors, test_class, test_countries):
+        global alternativeModles
+        alternativeModles = [alternativeModel(runType, train_data, train_factors, train_class, train_countries, test_data, \
+                                              test_factors, test_class, test_countries) for runType in dataTypes]
+        alternativeModles = dict([(dataTypes[i], alternativeModles[i]) for i in range(len(dataTypes))])
+        return alternativeModles
+    @staticmethod
+    def updateAlternativeModles(newAlternativeModles):
+        global alternativeModles
+        alternativeModles = newAlternativeModles
+
+    @staticmethod
+    def printAlters():
+        for data in dataTypes:
+            print(data)
+            print(alternativeModles[data].train_factors.shape)
+            print(alternativeModles[data].test_factors.shape)
+
 
 def clicked(b):
     temp = b.tooltip
