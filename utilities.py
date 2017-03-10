@@ -82,7 +82,7 @@ class DataPreparation:
         f.value += 50
 class MapVisualizations:
     @staticmethod
-    def plotDataOnMap(data, year='mean', feature="Happy Planet Index", binary=False, descripton=''):
+    def plotDataOnMap(data, year='mean', feature="Happy Planet Index", binary=False, descripton='', show_plot=True):
         if binary:
             num_colors = 2
         else:
@@ -121,7 +121,7 @@ class MapVisualizations:
         bins = np.linspace(values.min(), values.max(), num_colors)
         data_map['bin'] = np.digitize(values, bins) - 1
         data_map.sort_values('bin', ascending=False).head(10)
-        fig = plt.figure(figsize=(22, 12))
+        fig = plt.figure(figsize=(18, 9))
 
         ax = fig.add_subplot(111, axisbg='w', frame_on=False)
         if not binary:
@@ -173,6 +173,8 @@ class MapVisualizations:
         plt.annotate(descripton, xy=(-.8, -3.2), size=14, xycoords='axes fraction')
         plt.savefig(imgfile, bbox_inches='tight', pad_inches=.2)
         plt.plot()
+        if not show_plot:
+            plt.close()
         f.value += 20
 
     @staticmethod
@@ -235,7 +237,7 @@ class DataVisualizations:
             imgplot1.axes.get_yaxis().set_visible(False)
 
     @staticmethod
-    def simple2Dgraph(x_axis, title, xlabel, ylabel, ylim_start, ylim_end, ys, definitions, colors):
+    def simple2Dgraph(x_axis, title, xlabel, ylabel, ylim_start, ylim_end, ys, definitions, colors, save_name=''):
         for y, c, defi in zip(ys, colors, definitions):
             lines = plt.plot(x_axis.tolist(), y.tolist(), color=c, label=defi)
         plt.ylabel(ylabel)
@@ -243,7 +245,14 @@ class DataVisualizations:
         plt.title(title)
         plt.ylim(ylim_start, ylim_end)
         plt.legend()
-        plt.show()
+
+        if save_name != '':
+            plot_path = os.path.join(measurements_results, save_name).replace(" ", "_")
+            plt.savefig(plot_path, bbox_inches='tight', pad_inches=.2)
+            plt.close()
+        else:
+            plt.show()
+
     @staticmethod
     def distPlot(x_axis, title, xlabel, ylabel, bins, kde):
         sns.distplot(x_axis, bins = bins, kde = kde)
@@ -502,6 +511,7 @@ class ResultsMeasurements():
         if not loadModel:
             self.model.fit(trainFactors, trainClass)
             ModelDump.dumpModelToFile(model_file, model)
+            print("dump")
         else:
             self.model = ModelDump.loadModelFromFile(model_file)
         self.trainRelevantData['prediction'] = self.model.predict(trainFactors)
@@ -516,6 +526,10 @@ class ResultsMeasurements():
         self.testRelevantData['prediction'] = self.model.predict(testFactors)
         self.testRelevantData.is_copy = False
         self.testFactors = testFactors
+
+        self.testPlotToMap = self.testRelevantData['prediction'].to_frame()
+        self.testPlotToMap['year'] = self.testRelevantData['year']
+        self.testPlotToMap['country'] = self.testRelevantData['country']
 
     def RsquaredGraph(self, r2_train, r2_test, x_axis):
         DataVisualizations.simple2Dgraph(r2_train[0],
@@ -562,29 +576,33 @@ class ResultsMeasurements():
         plt.title(self.modelName + '\n Histogram of Happy Planet Index values: ' + title)
         plt.xlabel('HPI')
         plt.ylabel('density')
-        plt.show()
 
+        file_name = (self.modelName + ' Histogram ' + title).replace(" ", "_")
+
+        plot_path = os.path.join(measurements_results, file_name)
+        plt.savefig(plot_path, bbox_inches='tight', pad_inches=.2)
+        plt.close()
     def DistributionResults(self):
-        print("KSTEST results, train: " + str(self.DistributionNumericCalc(self.trainRelevantData['prediction'])))
-        print("KSTEST results, test : " + str(self.DistributionNumericCalc(self.testRelevantData['prediction'])))
+        # print("KSTEST results, train: " + str(self.DistributionNumericCalc(self.trainRelevantData['prediction'])))
+        # print("KSTEST results, test : " + str(self.DistributionNumericCalc(self.testRelevantData['prediction'])))
 
-        self.DistributionGraphicCalc(self.trainRelevantData['label'], 30, "train label")
-        self.DistributionGraphicCalc(self.trainRelevantData['prediction'], 30, "train prediction")
+        # self.DistributionGraphicCalc(self.trainRelevantData['label'], 30, "train label")
+        # self.DistributionGraphicCalc(self.trainRelevantData['prediction'], 30, "train prediction")
 
-        self.DistributionGraphicCalc(self.testRelevantData['label'], 30, "test label")
-        self.DistributionGraphicCalc(self.testRelevantData['prediction'], 30, "test prediction")
+        label_title = "test label"
+        prediction_title = "test prediction"
+        self.DistributionGraphicCalc(self.testRelevantData['label'], 30, label_title)
+        self.DistributionGraphicCalc(self.testRelevantData['prediction'], 30, prediction_title)
+        ImagesUtils.show2Images(os.path.join(measurements_results, (self.modelName + ' Histogram ' + label_title+".png").replace(" ", "_"))\
+                                ,os.path.join(measurements_results, (self.modelName + ' Histogram ' + prediction_title+".png").replace(" ", "_")))
+
 
     def MeanPredictionGraph(self, prediction_train, prediction_test, x_axis):
-        DataVisualizations.simple2Dgraph(prediction_train[0],
-                                         self.modelName + '\n HPI per ' + x_axis + ', Train Prediction mean (blue) vs. Train Label mean (green)',
-                                         x_axis, 'Prediction', 0, 100, \
-                                         [prediction_train[1], prediction_train[2]],
-                                         ['Train Prediction', 'Train Class'], ['b', 'g'])
         DataVisualizations.simple2Dgraph(prediction_test[0],
                                          self.modelName + '\n HPI per ' + x_axis + ', Test Prediction mean (blue) vs. Test Label mean (green)',
                                          x_axis, 'Prediction', 0, 100, \
                                          [prediction_test[1], prediction_test[2]], ['Test Prediction', 'Test Class'],
-                                         ['b', 'g'])
+                                         ['b', 'g'],save_name=self.modelName+' Prediction mean '+x_axis)
 
     def MeanPredictionSeriesYear(self, data, x_axis):
         MeanPredictionSeries = pd.DataFrame(
@@ -615,6 +633,10 @@ class ResultsMeasurements():
         # Mean Prediction per year, per GDP
         self.MeanPredictionGraph(MeanPredictionTrainYears, MeanPredictionTestYears, 'Year')
         self.MeanPredictionGraph(MeanPredictionTrainGDPs, MeanPredictionTestGDPs, 'GDP')
+        ImagesUtils.show2Images(
+            os.path.join(measurements_results, (self.modelName+' Prediction mean Year.png').replace(" ", "_")) \
+            , os.path.join(measurements_results,
+                           (self.modelName+' Prediction mean GDP.png').replace(" ", "_")))
 
     def errPercentage(self, label, prediction):
         return (abs(label - prediction) / label) * 100
@@ -630,7 +652,8 @@ class ResultsMeasurements():
                                          self.modelName + '\n Error Percentage per ' + x_axis + ', Train vs. Test',
                                          x_axis, 'Error Percentage', 0, 100, \
                                          [errPer_train[1], errPer_test[1]],
-                                         ['Error Percentage Train', 'Error Percentage Test'], ['b', 'g'])
+                                         ['Error Percentage Train', 'Error Percentage Test'], ['b', 'g'], \
+                                         save_name=self.modelName + ' Error Percentage ' + x_axis)
 
     def ErrorPercentageSeriesYear(self, data, x_axis):
         ErrorPercentage = pd.DataFrame(
@@ -664,6 +687,11 @@ class ResultsMeasurements():
         # R^2 per year, per GDP
         self.ErrorPercentageGraph(ErrorPercentageTrainYears, ErrorPercentageTestYears, 'Year')
         self.ErrorPercentageGraph(ErrorPercentageTrainGDPs, ErrorPercentageTestGDPs, 'GDP')
+
+        ImagesUtils.show2Images(
+            os.path.join(measurements_results, (self.modelName+' Error Percentage Year.png').replace(" ", "_")) \
+            , os.path.join(measurements_results,
+                           (self.modelName+' Error Percentage GDP.png').replace(" ", "_")))
 
     def plotForModel(self, request):
         if request == 'None':

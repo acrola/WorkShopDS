@@ -15,7 +15,9 @@ globe_plots = 'globe_plots'
 uncorrolated_plots = 'uncorrolated_images'
 
 # Paths for offline plots
-outliers_detection = os.path.join('offline_plots', 'outliers_detection_plots')
+offline_plots = 'offline_plots'
+outliers_detection = os.path.join(offline_plots, 'outliers_detection_plots')
+measurements_results = os.path.join(offline_plots, 'measurements_results')
 # Dumped models path
 dumped_models = 'dumped_models'
 
