@@ -542,6 +542,9 @@ class ResultsMeasurements():
                                                       self.trainRelevantData['label'])
         self.error_percentage_test = self.errPercentageCalc(self.testRelevantData['prediction'],
                                                      self.testRelevantData['label'])
+        self.comparison_parameters_df = pd.DataFrame([self.RSquaredTrain,self.RSquaredTest,self.train_mean_label, \
+                                      self.train_mean_prediction,self.test_mean_label,self.test_mean_prediction, \
+                                      self.error_percentage_train,self.error_percentage_test])
 
     def RsquaredGraph(self, r2_train, r2_test, x_axis):
         DataVisualizations.simple2Dgraph(r2_train[0],
