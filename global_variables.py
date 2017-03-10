@@ -11,13 +11,14 @@ input_labels = os.path.join('raw_data', 'Labels', 'Happy_Planet_Index_Data')
 countries_codes = os.path.join('raw_data', 'DB_Data', 'WDI_Country.csv')
 shapefile = os.path.join('map_files', 'ne_10m_admin_0_countries')
 template_image = os.path.join('map_files', 'imgfile.png')
-globe_plots = 'globe_plots'
 uncorrolated_plots = 'uncorrolated_images'
 
 # Paths for offline plots
 offline_plots = 'offline_plots'
 outliers_detection = os.path.join(offline_plots, 'outliers_detection_plots')
 measurements_results = os.path.join(offline_plots, 'measurements_results')
+globe_plots = os.path.join(offline_plots,'globe_plots')
+
 # Dumped models path
 dumped_models = 'dumped_models'
 
@@ -41,5 +42,5 @@ warnings.filterwarnings('ignore')
 
 # Multiple Data types
 dataTypes = ['main data', 'no countries', 'no years']
-types_for_ineract = ['None'] + dataTypes
+types_for_interact = ['None'] + dataTypes
 

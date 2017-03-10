@@ -121,7 +121,7 @@ class MapVisualizations:
         bins = np.linspace(values.min(), values.max(), num_colors)
         data_map['bin'] = np.digitize(values, bins) - 1
         data_map.sort_values('bin', ascending=False).head(10)
-        fig = plt.figure(figsize=(18, 9))
+        fig = plt.figure(figsize=(20, 10))
 
         ax = fig.add_subplot(111, axisbg='w', frame_on=False)
         if not binary:
@@ -530,6 +530,18 @@ class ResultsMeasurements():
         self.testPlotToMap = self.testRelevantData['prediction'].to_frame()
         self.testPlotToMap['year'] = self.testRelevantData['year']
         self.testPlotToMap['country'] = self.testRelevantData['country']
+        self.testPlotToMap['label'] = self.testRelevantData['label']
+
+        self.RSquaredTrain = self.model.score(self.trainFactors, self.trainRelevantData['label'])
+        self.RSquaredTest = self.model.score(self.testFactors, self.testRelevantData['label'])
+        self.train_mean_label = self.trainRelevantData['label'].mean()
+        self.train_mean_prediction = self.trainRelevantData['prediction'].mean()
+        self.test_mean_label = self.testRelevantData['label'].mean()
+        self.test_mean_prediction = self.testRelevantData['prediction'].mean()
+        self.error_percentage_train = self.errPercentageCalc(self.trainRelevantData['prediction'],
+                                                      self.trainRelevantData['label'])
+        self.error_percentage_test = self.errPercentageCalc(self.testRelevantData['prediction'],
+                                                     self.testRelevantData['label'])
 
     def RsquaredGraph(self, r2_train, r2_test, x_axis):
         DataVisualizations.simple2Dgraph(r2_train[0],
@@ -552,11 +564,8 @@ class ResultsMeasurements():
         return RsquaredSeries.sort_values(by=0, ascending=1)
 
     def RSquaredResults(self):
-        RSquaredTrain = self.model.score(self.trainFactors, self.trainRelevantData['label'])
-        RSquaredTest = self.model.score(self.testFactors, self.testRelevantData['label'])
-
-        print("R^2 for Train data = " + str(RSquaredTrain))
-        print("R^2 for Test data = " + str(RSquaredTest))
+        print("R^2 for Train data = " + str(self.RSquaredTrain))
+        print("R^2 for Test data = " + str(self.RSquaredTest))
 
         # RSquaredTrainYears = self.RsquaredSeriesYear(self.trainRelevantData, 'year')
         # RSquaredTestYears = self.RsquaredSeriesYear(self.testRelevantData, 'year')
@@ -619,10 +628,10 @@ class ResultsMeasurements():
         return MeanPredictionSeries.sort_values(by=0, ascending=1)
 
     def MeanPredictionResults(self):
-        print("The mean HPI of the train data: " + str(self.trainRelevantData['label'].mean()))
-        print("The mean prediction of the train data: " + str(self.trainRelevantData['prediction'].mean()))
-        print("The mean HPI of the test data : " + str(self.testRelevantData['label'].mean()))
-        print("The mean prediction of the test data : " + str(self.testRelevantData['prediction'].mean()))
+        print("The mean HPI of the train data: " + str(self.train_mean_label))
+        print("The mean prediction of the train data: " + str(self.train_mean_prediction))
+        print("The mean HPI of the test data : " + str(self.test_mean_label))
+        print("The mean prediction of the test data : " + str(self.test_mean_prediction))
 
         MeanPredictionTrainYears = self.MeanPredictionSeriesYear(self.trainRelevantData, 'year')
         MeanPredictionTestYears = self.MeanPredictionSeriesYear(self.testRelevantData, 'year')
@@ -670,13 +679,8 @@ class ResultsMeasurements():
         return ErrorPercentage.sort_values(by=0, ascending=1)
 
     def ErrorPercentageResults(self):
-        ErrorPercentageTrain = self.errPercentageCalc(self.trainRelevantData['prediction'],
-                                                      self.trainRelevantData['label'])
-        ErrorPercentageTest = self.errPercentageCalc(self.testRelevantData['prediction'],
-                                                     self.testRelevantData['label'])
-
-        print("Error Percentage for Train data = " + str(ErrorPercentageTrain))
-        print("Error Percentage for Test data = " + str(ErrorPercentageTest))
+        print("Error Percentage for Train data = " + str(self.error_percentage_train))
+        print("Error Percentage for Test data = " + str(self.error_percentage_test))
 
         ErrorPercentageTrainYears = self.ErrorPercentageSeriesYear(self.trainRelevantData, 'year')
         ErrorPercentageTestYears = self.ErrorPercentageSeriesYear(self.testRelevantData, 'year')
@@ -693,6 +697,12 @@ class ResultsMeasurements():
             , os.path.join(measurements_results,
                            (self.modelName+' Error Percentage GDP.png').replace(" ", "_")))
 
+    def labelPredictionComparisonPlot(self):
+        MapVisualizations.plotDataOnMap(self.testPlotToMap, year='mean', feature='label', binary=False, \
+                                        descripton='Happy Planet Index label on test dataset',show_plot=False)
+        MapVisualizations.plotDataOnMap(self.testPlotToMap, year='mean', feature='prediction', binary=False, \
+                                        descripton='Happy Planet Index prediction on test dataset', show_plot=False)
+        ImagesUtils.show2Images(os.path.join(globe_plots, 'label_mean.png'), os.path.join(globe_plots,'prediction_mean.png'))
     def plotForModel(self, request):
         if request == 'None':
             print("Please choose an option from the bar above")
