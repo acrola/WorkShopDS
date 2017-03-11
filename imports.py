@@ -16,7 +16,6 @@ import random
 from sklearn.model_selection import train_test_split
 import warnings
 
-
 # for map graphical view:
 import matplotlib.cm
 import matplotlib as mpl
