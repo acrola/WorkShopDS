@@ -1,5 +1,6 @@
 from classes import *
 
+
 def clicked(b):
     temp = b.tooltip
     if b.value == True:
@@ -19,6 +20,7 @@ def deleteFiles(b):
             if os.path.isfile(file_path):
                 os.remove(file_path)
 
+
 button_exec = widgets.Button(description=turn_on_exec, tooltip=turn_off_exec, value=True)
 button_exec.on_click(clicked)
 
@@ -27,7 +29,6 @@ button_plots.on_click(clicked)
 
 button_delete = widgets.Button(description=delete_files, value=True)
 button_delete.on_click(deleteFiles)
-
 
 display(button_exec)
 display(button_plots)

@@ -259,7 +259,7 @@ class ImagesUtils:
         imgplot2.axes.get_yaxis().set_visible(False)
 
 
-class alternativeModles_string:
+class AlternativeModelsString:
     def __init__(self, rlm_initial_r2, rlm_final_r2, rlm_n_rows_dropped, pca_r2_compared, pca_decision):
         self.rlm_initial_r2 = rlm_initial_r2
         self.rlm_final_r2 = rlm_final_r2
@@ -278,7 +278,7 @@ class OutliersDetection:
         print("train R^2: %.4f " % (r2))
         res = train_class - regr.predict(train_factors)
         y, x = res, regr.predict(train_factors)
-        print("residuals appear to behave randomly, it suggests that the linear model fits the data well.")
+        print("Residuals appear to behave randomly, it suggests that the linear model fits the data well:")
         fig = plt.figure(figsize=(5, 4))
         ax = fig.add_subplot(1, 1, 1)  # one row, one column, first plot
         ax.scatter(x, y, c="blue", alpha=.1, s=300)
@@ -286,7 +286,7 @@ class OutliersDetection:
         ax.set_xlabel("predicted")
         ax.set_ylabel("residuals)")
         plt.show()
-        print("residuals appear to be normally distributed.")
+        print("Residuals appear to be normally distributed:")
         fig = sm.qqplot(res)
         plt.show()
 
@@ -345,7 +345,6 @@ class OutliersDetection:
             mean = np.asarray([tup[1] for tup in rresid]).mean()
             deleted_index = [tup[0] for tup in rresid if tup[1] > mean + 2 * sd]
             amount += len(deleted_index)
-            # dropped_rows = train_factors.take(deleted_index, axis=0, convert=True, is_copy=True)
             train_factors = train_factors.drop(train_factors.index[deleted_index])
             train_class = train_class.drop(train_class.index[deleted_index])
             train_data = train_data.drop(train_data.index[deleted_index])
@@ -451,7 +450,7 @@ class OutliersDetection:
                     outliers_df_AltModels[request]['country'].head(min(10, len(outliers_indecies_AltModels[request]))))
 
         interact(printCountries, \
-                 request=RadioButtons(options=['none'] + dataTypes, \
+                 request=RadioButtons(options=['none'] + data_types, \
                                       description='Select which data\'s outliers countries to print:', \
                                       disabled=False))
 
@@ -479,7 +478,7 @@ class OutliersDetection:
         return train_factors, train_class, train_data
 
 
-class ResultsMeasurements():
+class ResultsMeasurements:
     def __init__(self, load_model, train_data, test_data, train_factors, test_factors, train_class, test_class, model,
                  model_name):
         # A dataframe containing Years, GDP Per Capita, Labels, Predictions
@@ -603,8 +602,6 @@ class ResultsMeasurements():
         return mean_prediction_series.sort_values(by=0, ascending=1)
 
     def meanPredictionResults(self):
-        print("The mean HPI of the train data: " + str(self.train_mean_label))
-        print("The mean prediction of the train data: " + str(self.train_mean_prediction))
         print("The mean HPI of the test data : " + str(self.test_mean_label))
         print("The mean prediction of the test data : " + str(self.test_mean_prediction))
 
@@ -655,7 +652,6 @@ class ResultsMeasurements():
         return error_percentage.sort_values(by=0, ascending=1)
 
     def errPercentageResults(self):
-        print("Error Percentage for Train data = " + str(self.error_percentage_train))
         print("Error Percentage for Test data = " + str(self.error_percentage_test))
 
         error_percentage_train_years = self.errPercentageSeriesYear(self.train_relevant_data, 'year')
@@ -714,10 +710,10 @@ class ResultsMeasurements():
 
     @staticmethod
     def tabDisplay(models):
-        children = [models[data].interactResults() for data in dataTypes]
+        children = [models[data].interactResults() for data in data_types]
         tab = widgets.Tab(children=children)
-        for i in range(len(dataTypes)):
-            tab.set_title(i, dataTypes[i])
+        for i in range(len(data_types)):
+            tab.set_title(i, data_types[i])
         return tab
 
     @staticmethod
@@ -755,7 +751,7 @@ class ResultsMeasurements():
             (options=types_for_interact, description='Select data type', disabled=False))
 
 
-class ModelDump():
+class ModelDump:
     @staticmethod
     def dumpModelToFile(name, model):
         with open(os.path.join(dumped_models, name + '.pkl'), 'wb') as fid:
@@ -822,9 +818,39 @@ class FeatureSelection:
                                              disabled=False))
 
 
-class AlternativeModel():
+class AlternativeModel:
     def __init__(self, run_type, train_data, train_factors, train_class, train_countries, test_data, test_factors,
                  test_class, test_countries):
+        # if run_type == 'no country' or run_type == 'no decade':
+        #     all_factors = pd.concat([train_factors, test_factors])
+        #     all_countries = pd.concat([train_countries, test_countries])
+        #     all_classes = pd.concat([train_class, test_class])
+        #     # all_data = pd.concat([train_data, test_data])
+        #     all_data = all_factors
+        #     all_data['country'] = all_countries
+        #     all_data['Happy Planet Index'] = all_classes
+        #     if run_type == 'no country':
+        #         # self.train_data = all_data[all_data.country != 'Israel']
+        #         # self.test_data = all_data[all_data.country == 'Israel']
+        #         self.train_data = all_data.loc[all_data['country'] != 'Israel']
+        #         self.test_data = all_data.loc[all_data['country'] == 'Israel']
+        #         self.train_data = self.train_data.drop('country_Israel', axis=1)
+        #         self.test_data = self.test_data.drop('country_Israel', axis=1)
+        #     if run_type == 'no decade':
+        #         # self.train_data = all_data[all_data.country != 4]
+        #         # self.test_data = all_data[all_data.country == 4]
+        #         self.train_data = all_data.loc[all_data['year'] != np.float64(3)]
+        #         self.test_data = all_data.loc[all_data['year'] == np.float64(3)]
+        #
+        #     self.train_factors = self.train_data.drop(['country', 'Happy Planet Index'], axis=1)
+        #     self.test_factors = self.test_data.drop(['country', 'Happy Planet Index'], axis=1)
+        #     self.train_class = self.train_data['Happy Planet Index'].to_frame()
+        #     self.test_class = self.test_data['Happy Planet Index'].to_frame()
+        #     # self.train_factors.reset_index(inplace=True)
+        #     # self.test_factors.reset_index(inplace=True)
+        #     # self.train_class.reset_index(inplace=True)
+        #     # self.test_class.reset_index(inplace=True)
+        # else:
         self.train_countries = train_countries
         self.test_countries = test_countries
         self.train_data = train_data.copy()
@@ -847,23 +873,16 @@ class AlternativeModel():
     @staticmethod
     def createAlternativeModels(train_data, train_factors, train_class, train_countries, test_data, \
                                 test_factors, test_class, test_countries):
-        global alternative_modles
+        global alternative_models
         alternative_models = [
-            AlternativeModel(runType, train_data, train_factors, train_class, train_countries, test_data, \
-                             test_factors, test_class, test_countries) for runType in dataTypes]
-        alternative_models = dict([(dataTypes[i], alternative_models[i]) for i in range(len(dataTypes))])
+            AlternativeModel(run_type, train_data, train_factors, train_class, train_countries, test_data, \
+                             test_factors, test_class, test_countries) for run_type in data_types]
+        alternative_models = dict([(data_types[i], alternative_models[i]) for i in range(len(data_types))])
         global alternative_models_strings
-        alternative_models_strings = dict([(data, alternativeModles_string("", "", "", "", "")) for data in dataTypes])
+        alternative_models_strings = dict([(data, AlternativeModelsString("", "", "", "", "")) for data in data_types])
         return alternative_models
 
     @staticmethod
-    def updateAlternativeModels(new_alternative_modles):
+    def updateAlternativeModels(new_alternative_models):
         global alternative_models
-        alternative_models = new_alternative_modles
-
-    @staticmethod
-    def printAlters():
-        for data in dataTypes:
-            print(data)
-            print(alternative_models[data].train_factors.shape)
-            print(alternative_models[data].test_factors.shape)
+        alternative_models = new_alternative_models
