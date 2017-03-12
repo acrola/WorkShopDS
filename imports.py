@@ -34,7 +34,6 @@ from sklearn.linear_model import HuberRegressor
 import statsmodels.api as sm
 
 # for images comparison:
-import cv2
 import matplotlib
 import matplotlib.pyplot as plt
 from PIL import Image
