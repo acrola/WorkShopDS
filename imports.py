@@ -46,12 +46,10 @@ from sklearn.pipeline import Pipeline
 import sklearn.preprocessing as sp
 import sklearn.feature_selection as fs
 from sklearn import kernel_ridge
-# import skfeature as skf
 
 # Import the random forest model.
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
-# from sklearn.grid_search import GridSearchCV
 
 # Imports for kernel ridge:
 from sklearn.model_selection import GridSearchCV
@@ -67,7 +65,7 @@ from sklearn.kernel_ridge import KernelRidge
 # cPickle for model fit download to file
 import _pickle as cPickle
 
-# loading bar
+# loading bar and widgets
 from ipywidgets import FloatProgress
 from IPython.display import display
 from ipywidgets import interact, interactive, RadioButtons

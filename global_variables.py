@@ -41,7 +41,5 @@ delete_files = 'Delete offline plots'
 warnings.filterwarnings('ignore')
 
 # Multiple Data types
-# data_types = ['main data', 'no countries', 'no years', 'no country', 'no decade']
 data_types = ['main data', 'no countries', 'no years']
-
 types_for_interact = ['none'] + data_types
