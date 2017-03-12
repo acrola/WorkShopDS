@@ -35,6 +35,7 @@ turn_on_exec = 'Run long executions'
 turn_off_exec = 'Skip long executions'
 turn_on_plots = 'Show plots'
 turn_off_plots = 'Don\'t show plots'
+delete_files = 'Delete offline plots'
 
 # Ignore warnings
 warnings.filterwarnings('ignore')
