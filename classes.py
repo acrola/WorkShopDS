@@ -185,6 +185,7 @@ class MapVisualizations:
             plt.plot()
             f.value += 20
         else:
+            plt.figure(figsize=(16, 8))
             img = mpimg.imread(imgfile)
             imgplot = plt.imshow(img)
             imgplot.axes.get_xaxis().set_visible(False)
@@ -421,7 +422,7 @@ class OutliersDetection:
         else:
             file_data_name = request.replace(' ', '_')
             image_initial_path = os.path.join(outliers_detection, file_data_name + '_PCA.png')
-            fig1 = plt.figure(1)
+            fig1 = plt.figure(1, figsize=(7, 7))
             img1 = mpimg.imread(image_initial_path)
             imgplot1 = plt.imshow(img1)
             imgplot1.axes.get_xaxis().set_visible(False)
@@ -474,7 +475,7 @@ class OutliersDetection:
             train_data = train_data.drop(train_data.index[outliers_indecies])
         else:
             print(
-                '\tLeaving outliers in the training set, did not exceed 0.3 threshold in the difference between the R^2s. \n')
+                '\tLeaving outliers in the training set, did not exceed 0.03 threshold in the difference between the R^2s. \n')
         return train_factors, train_class, train_data
 
 
