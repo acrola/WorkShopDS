@@ -1,1 +1,1 @@
-# DataScience-class
+# DataScience-Workshop Project
